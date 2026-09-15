@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../auth/auth_state.dart';
+import '../../../auth/presentation/viewmodels/auth_view_model.dart';
 
 /// Placeholder shown once a session is confirmed. Day 1 scope ends here —
 /// the create-story form, My Stories list, and detail view arrive on
@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthState>().currentUser;
+    final user = context.watch<AuthViewModel>().currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -20,7 +20,7 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Log out',
-            onPressed: () => context.read<AuthState>().logout(),
+            onPressed: () => context.read<AuthViewModel>().logout(),
           ),
         ],
       ),

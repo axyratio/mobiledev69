@@ -31,7 +31,10 @@ class Env:
 
     SECRET_KEY: str = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
     DEBUG: bool = _read_bool("DJANGO_DEBUG", True)
-    ALLOWED_HOSTS: list[str] = _read_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+    # 10.0.2.2 is the Android emulator's alias for the host machine's localhost.
+    ALLOWED_HOSTS: list[str] = _read_list(
+        "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,10.0.2.2"
+    )
 
     DATABASE_URL: str = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 

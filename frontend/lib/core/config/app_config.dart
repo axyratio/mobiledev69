@@ -15,4 +15,6 @@ class AppConfig {
   static String get googleLoginUrl => '$backendBaseUrl/accounts/google/login/';
   static String get logoutUrl => '$backendBaseUrl/accounts/logout/';
   static String get currentUserUrl => '$backendBaseUrl/api/auth/me/';
+  static String get registerUrl => '$backendBaseUrl/api/auth/register/';
+  static String get loginUrl => '$backendBaseUrl/api/auth/login/';
 }
