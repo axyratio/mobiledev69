@@ -47,6 +47,7 @@ class Env:
     )
 
     LLM_API_KEY: str = os.environ.get("LLM_API_KEY", "")
+    LLM_MODEL: str = os.environ.get("LLM_MODEL", "gemini-3.6-flash")
 
 
 env = Env()

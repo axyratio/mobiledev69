@@ -5,16 +5,25 @@ import 'package:provider/provider.dart';
 import 'core/api/api_client.dart';
 import 'core/auth/session_store.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'features/auth/data/auth_repository_impl.dart';
 import 'features/auth/domain/auth_repository.dart';
 import 'features/auth/presentation/viewmodels/auth_view_model.dart';
+import 'features/home/data/home_repository_impl.dart';
+import 'features/home/domain/home_repository.dart';
+import 'features/stories/data/stories_repository_impl.dart';
+import 'features/stories/domain/stories_repository.dart';
 import 'router/app_router.dart';
 
 /// Composition root: wires Service (ApiClient, SessionStore) -> Repository
 /// -> ViewModel via a single [MultiProvider], entirely through `provider`
 /// (no static/singleton access anywhere else in the app).
 class StoryGeneratorApp extends StatelessWidget {
-  const StoryGeneratorApp({super.key, required this.apiClient, required this.sessionStore});
+  const StoryGeneratorApp({
+    super.key,
+    required this.apiClient,
+    required this.sessionStore,
+  });
 
   final ApiClient apiClient;
   final SessionStore sessionStore;
@@ -28,8 +37,16 @@ class StoryGeneratorApp extends StatelessWidget {
         Provider<AuthRepository>(
           create: (_) => AuthRepositoryImpl(apiClient, sessionStore),
         ),
+        Provider<HomeRepository>(create: (_) => HomeRepositoryImpl(apiClient)),
+        Provider<StoriesRepository>(
+          create: (_) => StoriesRepositoryImpl(apiClient),
+        ),
         ChangeNotifierProvider<AuthViewModel>(
-          create: (context) => AuthViewModel(context.read<AuthRepository>())..checkSession(),
+          create: (context) =>
+              AuthViewModel(context.read<AuthRepository>())..checkSession(),
+        ),
+        ChangeNotifierProvider<ThemeController>(
+          create: (_) => ThemeController(),
         ),
       ],
       child: const _AppRouterHost(),
@@ -51,10 +68,12 @@ class _AppRouterHostState extends State<_AppRouterHost> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = context.watch<ThemeController>().mode;
     return MaterialApp.router(
       title: 'AI Story Generator',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       routerConfig: _router,
     );
   }

@@ -57,18 +57,20 @@ class _SignupViewState extends State<_SignupView> {
   Future<void> _submit() async {
     final formValid = _formKey.currentState!.validate();
     if (!_agreedToTerms) {
-      setState(() => _termsError = 'Please agree to the processing of personal data.');
+      setState(
+        () => _termsError = 'Please agree to the processing of personal data.',
+      );
     } else {
       setState(() => _termsError = null);
     }
     if (!formValid || !_agreedToTerms) return;
 
     await context.read<SignupViewModel>().submit(
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
     // On success the router's auth guard (listening to AuthViewModel)
     // redirects to Home automatically; on failure the ViewModel's
     // errorMessage is already shown below.
@@ -113,8 +115,9 @@ class _SignupViewState extends State<_SignupView> {
               textCapitalization: TextCapitalization.words,
               autofillHints: const [AutofillHints.givenName],
               decoration: const InputDecoration(labelText: 'First name'),
-              validator: (value) =>
-                  (value == null || value.trim().isEmpty) ? 'Enter your first name' : null,
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Enter your first name'
+                  : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -129,8 +132,9 @@ class _SignupViewState extends State<_SignupView> {
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
-              validator: (value) =>
-                  (value == null || !value.contains('@')) ? 'Enter a valid email' : null,
+              validator: (value) => (value == null || !value.contains('@'))
+                  ? 'Enter a valid email'
+                  : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -140,8 +144,11 @@ class _SignupViewState extends State<_SignupView> {
               decoration: InputDecoration(
                 labelText: 'Password',
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
               validator: (value) => (value == null || value.length < 8)
@@ -157,7 +164,8 @@ class _SignupViewState extends State<_SignupView> {
                 children: [
                   Checkbox(
                     value: _agreedToTerms,
-                    onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
+                    onChanged: (value) =>
+                        setState(() => _agreedToTerms = value ?? false),
                   ),
                   const Expanded(
                     child: Text('I agree to the processing of Personal data'),
@@ -166,14 +174,13 @@ class _SignupViewState extends State<_SignupView> {
               ),
             ),
             const SizedBox(height: 12),
-            FilledButton(
+            OutlinedButton(
               onPressed: viewModel.isSubmitting ? null : _submit,
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               child: viewModel.isSubmitting
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Sign up'),
             ),

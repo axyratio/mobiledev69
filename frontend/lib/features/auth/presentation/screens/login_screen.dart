@@ -50,9 +50,9 @@ class _LoginViewState extends State<_LoginView> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     await context.read<LoginViewModel>().submit(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
     // On success the router's auth guard (listening to AuthViewModel)
     // redirects to Home automatically; on failure the ViewModel's
     // errorMessage is already shown below.
@@ -95,8 +95,9 @@ class _LoginViewState extends State<_LoginView> {
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
-              validator: (value) =>
-                  (value == null || !value.contains('@')) ? 'Enter a valid email' : null,
+              validator: (value) => (value == null || !value.contains('@'))
+                  ? 'Enter a valid email'
+                  : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -106,23 +107,26 @@ class _LoginViewState extends State<_LoginView> {
               decoration: InputDecoration(
                 labelText: 'Password',
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
-              validator: (value) =>
-                  (value == null || value.isEmpty) ? 'Enter your password' : null,
+              validator: (value) => (value == null || value.isEmpty)
+                  ? 'Enter your password'
+                  : null,
               onFieldSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 24),
-            FilledButton(
+            OutlinedButton(
               onPressed: viewModel.isSubmitting ? null : _submit,
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
               child: viewModel.isSubmitting
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Sign in'),
             ),

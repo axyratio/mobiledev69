@@ -17,4 +17,11 @@ class AppConfig {
   static String get currentUserUrl => '$backendBaseUrl/api/auth/me/';
   static String get registerUrl => '$backendBaseUrl/api/auth/register/';
   static String get loginUrl => '$backendBaseUrl/api/auth/login/';
+  static String get storiesUrl => '$backendBaseUrl/api/stories/';
+  static String get storiesGenerateUrl =>
+      '$backendBaseUrl/api/stories/generate/';
+  static String storyDetailUrl(int id) => '$backendBaseUrl/api/stories/$id/';
+  static String get wordsTodayUrl => '$backendBaseUrl/api/words/today/';
+  static String get wordsRandomUrl => '$backendBaseUrl/api/words/random/';
+  static String get wordsSearchUrl => '$backendBaseUrl/api/words/search/';
 }

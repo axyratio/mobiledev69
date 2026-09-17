@@ -10,4 +10,5 @@ urlpatterns = [
     path("api/auth/me/", current_user_view, name="current-user"),
     path("api/auth/register/", register_view, name="register"),
     path("api/auth/login/", login_view, name="login"),
+    path("api/", include("apps.stories.urls")),
 ]

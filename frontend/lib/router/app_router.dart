@@ -6,6 +6,9 @@ import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
 import '../features/auth/presentation/viewmodels/auth_view_model.dart';
 import '../features/home/presentation/screens/home_screen.dart';
+import '../features/stories/domain/models/story_detail.dart';
+import '../features/stories/presentation/screens/create_story_screen.dart';
+import '../features/stories/presentation/screens/story_detail_screen.dart';
 import 'auth_guard.dart';
 
 /// Builds the app's [GoRouter]. [authViewModel] drives both the guard
@@ -20,7 +23,21 @@ GoRouter buildAppRouter(AuthViewModel authViewModel) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const _RootScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/signup', builder: (context, state) => const SignupScreen()),
+      GoRoute(
+        path: '/signup',
+        builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/create',
+        builder: (context, state) => const CreateStoryScreen(),
+      ),
+      GoRoute(
+        path: '/stories/:id',
+        builder: (context, state) => StoryDetailScreen(
+          storyId: int.parse(state.pathParameters['id']!),
+          preloaded: state.extra as StoryDetail?,
+        ),
+      ),
     ],
   );
 }

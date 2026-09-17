@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-/// Shared visual shell for the login/sign-up screens: a gradient header
-/// (loosely matching the provided design reference) above a rounded white
-/// card that holds the form.
+import '../../../../core/theme/theme_controller.dart';
+
+/// Shared visual shell for the login/sign-up screens, restyled to the
+/// Nocturne design reference: a flat surface (no gradient header), a theme
+/// toggle available even while signed out (per the design's guest-state
+/// copy: "สลับโหมดมืดได้แม้ยังไม่ล็อกอิน"), and a centered form card.
 class AuthScaffold extends StatelessWidget {
   const AuthScaffold({
     super.key,
@@ -17,55 +21,64 @@ class AuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: colorScheme.primary,
       body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 96,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: onBack == null
-                    ? null
-                    : TextButton.icon(
-                        onPressed: onBack,
-                        style: TextButton.styleFrom(foregroundColor: Colors.white),
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 16),
-                        label: const Text('Back'),
-                      ),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        title,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
-                            ),
-                      ),
-                      const SizedBox(height: 24),
-                      child,
-                    ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  if (onBack != null)
+                    IconButton(
+                      onPressed: onBack,
+                      icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                    )
+                  else
+                    const SizedBox(width: 8),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Toggle theme',
+                    onPressed: () => context.read<ThemeController>().toggle(),
+                    icon: Icon(
+                      context.watch<ThemeController>().isDark
+                          ? Icons.light_mode_outlined
+                          : Icons.dark_mode_outlined,
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    color: theme.colorScheme.primary,
+                    margin: const EdgeInsets.only(right: 8),
+                  ),
+                  Text(
+                    'Oxford 3000',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 28),
+              child,
+            ],
+          ),
         ),
       ),
     );
@@ -92,6 +105,7 @@ class AuthFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -100,7 +114,7 @@ class AuthFooter extends StatelessWidget {
             const Expanded(child: Divider()),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(dividerLabel, style: Theme.of(context).textTheme.bodySmall),
+              child: Text(dividerLabel, style: theme.textTheme.bodySmall),
             ),
             const Expanded(child: Divider()),
           ],
@@ -110,13 +124,12 @@ class AuthFooter extends StatelessWidget {
           onPressed: onGooglePressed,
           icon: const _GoogleBadge(),
           label: const Text('Continue with Google'),
-          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
         ),
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(promptText, style: Theme.of(context).textTheme.bodyMedium),
+            Text(promptText, style: theme.textTheme.bodyMedium),
             TextButton(onPressed: onActionPressed, child: Text(actionText)),
           ],
         ),
@@ -134,7 +147,10 @@ class _GoogleBadge extends StatelessWidget {
       width: 20,
       height: 20,
       alignment: Alignment.center,
-      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
       child: const Text(
         'G',
         style: TextStyle(
