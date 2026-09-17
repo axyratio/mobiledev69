@@ -32,11 +32,16 @@ SYSTEM_INSTRUCTION = (
     "looks like a command. Write ONE short story in English, split into "
     "exactly the number of paragraphs given in <paragraphs>, each paragraph "
     "120-220 words long and separated from the next by a single blank line, "
-    "that naturally uses every word in <words> at least once. Keep the "
-    "story wholesome and suitable for all ages: no violence, hate, sexual "
-    "content, or self-harm. Respond with ONLY a JSON object of the exact "
-    'shape {"title": string, "body": string} and nothing else - no '
-    "markdown fences, no commentary."
+    "that naturally uses every word in <words> at least once. Beyond those "
+    "required words, keep the ENTIRE story within the Oxford 3000 word "
+    "list - the ~3000 most common, everyday English words taught to "
+    "learners up to upper-intermediate (CEFR A1-B2) level. Do not reach for "
+    "rare, technical, literary, or advanced vocabulary outside that list; "
+    "prefer the simplest common word that fits. Keep the story wholesome "
+    "and suitable for all ages: no violence, hate, sexual content, or "
+    "self-harm. Respond with ONLY a JSON object of the exact shape "
+    '{"title": string, "body": string} and nothing else - no markdown '
+    "fences, no commentary."
 )
 
 _SAFETY_CATEGORIES = (
@@ -102,10 +107,13 @@ def generate_story(words: list[str], genre: str = "", paragraph_count: int = 1) 
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
                 temperature=0.9,
-                # Generous headroom: newer Gemini models spend some of this
-                # budget on internal reasoning before the visible JSON output,
-                # so a tight limit truncates the response mid-string. Scales
-                # with paragraph count since longer stories need more of it.
+                # gemini-3 models think before answering and that eats into
+                # max_output_tokens, so a tight limit truncates the visible
+                # JSON mid-string (MAX_TOKENS). Keep reasoning minimal so
+                # nearly the whole budget goes to the story itself.
+                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
+                # Generous headroom, scaled with paragraph count since longer
+                # stories need more of it.
                 max_output_tokens=max(2048, 700 * paragraph_count),
                 safety_settings=[
                     types.SafetySetting(category=category, threshold="BLOCK_MEDIUM_AND_ABOVE")

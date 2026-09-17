@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/format/thai_datetime.dart';
+import '../../../auth/presentation/viewmodels/auth_view_model.dart';
 import '../../domain/models/story_detail.dart';
+import '../../domain/models/story_vocab_word.dart';
 import '../../domain/stories_repository.dart';
 import '../viewmodels/story_detail_view_model.dart';
 import '../widgets/highlighted_story_body.dart';
@@ -23,6 +25,7 @@ class StoryDetailScreen extends StatelessWidget {
         context.read<StoriesRepository>(),
         storyId: storyId,
         preloaded: preloaded,
+        initialLevel: context.read<AuthViewModel>().currentUser?.cefrLevel ?? 'A1',
       ),
       child: const _StoryDetailView(),
     );
@@ -126,7 +129,12 @@ class _StoryDetailBody extends StatelessWidget {
             style: theme.textTheme.bodySmall,
           ),
           const Divider(height: 32),
-          HighlightedStoryBody(body: story.body, words: story.words),
+          HighlightedStoryBody(
+            body: story.body,
+            mainWords: viewModel.highlightedWords,
+            extraWords: viewModel.extraHighlightedWords,
+            onWordTap: (word) => _showWordDefinition(context, viewModel, word),
+          ),
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.all(14),
@@ -160,7 +168,7 @@ class _StoryDetailBody extends StatelessWidget {
                   children: [
                     for (final word in story.words)
                       Chip(
-                        label: Text(word),
+                        label: Text(word.word),
                         backgroundColor: theme.colorScheme.primaryContainer,
                         labelStyle: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer,
@@ -174,6 +182,75 @@ class _StoryDetailBody extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Shows the tapped word's definition (English, Thai, example) in a bottom
+/// sheet. Does nothing if the word can't be found (shouldn't happen — the
+/// tapped text always comes from a word the highlighter itself matched).
+void _showWordDefinition(BuildContext context, StoryDetailViewModel viewModel, String word) {
+  final entry = viewModel.findWord(word);
+  if (entry == null) return;
+  showModalBottomSheet(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => _WordDefinitionSheet(word: entry),
+  );
+}
+
+class _WordDefinitionSheet extends StatelessWidget {
+  const _WordDefinitionSheet({required this.word});
+
+  final StoryVocabWord word;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(word.word, style: theme.textTheme.headlineSmall),
+                const SizedBox(width: 10),
+                Chip(
+                  label: Text(word.cefrLevel),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (!word.hasDefinition)
+              Text(
+                'ยังไม่มีคำอธิบายสำหรับคำนี้',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else ...[
+              if (word.definitionTh.isNotEmpty)
+                Text(word.definitionTh, style: theme.textTheme.bodyLarge),
+              if (word.definitionEn.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(word.definitionEn, style: theme.textTheme.bodyMedium),
+              ],
+              if (word.example.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '"${word.example}"',
+                  style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+                ),
+              ],
+            ],
+          ],
+        ),
       ),
     );
   }

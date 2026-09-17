@@ -18,4 +18,8 @@ abstract class AuthRepository {
   });
 
   Future<Result<void>> logout();
+
+  /// Persists the learner's chosen CEFR level (Story Detail highlight
+  /// filter), so it's remembered on every future visit.
+  Future<Result<SessionUser>> updateCefrLevel(String level);
 }

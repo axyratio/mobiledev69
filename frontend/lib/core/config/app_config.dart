@@ -17,6 +17,7 @@ class AppConfig {
   static String get currentUserUrl => '$backendBaseUrl/api/auth/me/';
   static String get registerUrl => '$backendBaseUrl/api/auth/register/';
   static String get loginUrl => '$backendBaseUrl/api/auth/login/';
+  static String get updateCefrLevelUrl => '$backendBaseUrl/api/auth/cefr-level/';
   static String get storiesUrl => '$backendBaseUrl/api/stories/';
   static String get storiesGenerateUrl =>
       '$backendBaseUrl/api/stories/generate/';

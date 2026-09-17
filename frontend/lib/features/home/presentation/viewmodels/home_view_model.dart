@@ -4,12 +4,12 @@ import '../../../../core/result.dart';
 import '../../domain/home_repository.dart';
 import '../../domain/models/story_summary.dart';
 
-enum StorySortMode { recent, titleAz, mostWords }
+const _recentPreviewCount = 2;
 
-/// Drives the Home feed (mockup 1b): loads the signed-in user's stories plus
-/// today's word sample, then applies the search/sort chips client-side —
-/// the dataset is small enough that there's no need for a server round trip
-/// per keystroke or chip tap.
+/// Drives the Home dashboard (mockup 1a): a create-story hero, quick stats,
+/// today's word sample, and a small preview of the most recent stories.
+/// The full searchable/sortable list lives on My Stories instead
+/// (FR-19/FR-20) — this screen is a launchpad, not the list itself.
 class HomeViewModel extends ChangeNotifier {
   HomeViewModel(this._repository) {
     load();
@@ -22,46 +22,21 @@ class HomeViewModel extends ChangeNotifier {
   List<StorySummary> _stories = const [];
   List<String> todayWords = const [];
 
-  String searchQuery = '';
-  StorySortMode sortMode = StorySortMode.recent;
-
   int get storyCount => _stories.length;
 
-  List<StorySummary> get visibleStories {
-    final query = searchQuery.trim().toLowerCase();
-    final filtered = query.isEmpty
-        ? _stories
-        : _stories
-              .where(
-                (story) =>
-                    story.title.toLowerCase().contains(query) ||
-                    story.words.any(
-                      (word) => word.toLowerCase().contains(query),
-                    ),
-              )
-              .toList();
-
-    final sorted = List<StorySummary>.of(filtered);
-    switch (sortMode) {
-      case StorySortMode.recent:
-        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      case StorySortMode.titleAz:
-        sorted.sort((a, b) => a.title.compareTo(b.title));
-      case StorySortMode.mostWords:
-        sorted.sort((a, b) => b.words.length.compareTo(a.words.length));
+  /// Every distinct word used across the user's stories so far — a simple
+  /// "vocabulary covered" count for the stats row.
+  int get wordsUsedCount {
+    final unique = <String>{};
+    for (final story in _stories) {
+      unique.addAll(story.words);
     }
-    return sorted;
+    return unique.length;
   }
 
-  void setSearchQuery(String value) {
-    searchQuery = value;
-    notifyListeners();
-  }
-
-  void setSortMode(StorySortMode mode) {
-    sortMode = mode;
-    notifyListeners();
-  }
+  /// The most recent stories, already sorted newest-first by the API.
+  List<StorySummary> get recentStories =>
+      _stories.take(_recentPreviewCount).toList();
 
   Future<void> load() async {
     isLoading = true;

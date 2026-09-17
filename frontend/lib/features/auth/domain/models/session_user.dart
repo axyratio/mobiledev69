@@ -8,10 +8,20 @@ class SessionUser {
     required this.email,
     required this.name,
     required this.themePreference,
+    required this.cefrLevel,
+    required this.oidcProvider,
   });
 
   final int id;
   final String email;
   final String name;
   final String themePreference;
+
+  /// The learner's own CEFR level (default A1) — Story Detail only
+  /// highlights target words at or above it.
+  final String cefrLevel;
+
+  /// The OIDC provider this account is linked to (e.g. "google"), or empty
+  /// for an email/password account — shown as a badge on Settings.
+  final String oidcProvider;
 }

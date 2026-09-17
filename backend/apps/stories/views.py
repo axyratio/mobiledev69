@@ -68,7 +68,7 @@ def words_today_view(request):
     sample_size = min(TODAY_WORD_COUNT, len(word_ids))
     sampled_ids = random.Random(today).sample(word_ids, sample_size) if sample_size else []
     words = Word.objects.filter(id__in=sampled_ids)
-    by_id = {word.id: word.word for word in words}
+    by_id = {word.id: word.lemma for word in words}
     return Response({"words": [by_id[word_id] for word_id in sampled_ids]})
 
 
@@ -102,7 +102,7 @@ def random_words_view(request):
 
     sampled_ids = random.sample(word_ids, count)
     words = Word.objects.filter(id__in=sampled_ids)
-    by_id = {word.id: word.word for word in words}
+    by_id = {word.id: word.lemma for word in words}
     return Response({"words": [{"id": word_id, "word": by_id[word_id]} for word_id in sampled_ids]})
 
 
@@ -115,8 +115,8 @@ def words_search_view(request):
     if not query:
         return Response({"words": []})
 
-    matches = Word.objects.filter(word__icontains=query).order_by("word")[:MAX_SEARCH_RESULTS]
-    return Response({"words": [{"id": word.id, "word": word.word} for word in matches]})
+    matches = Word.objects.filter(lemma__icontains=query).order_by("lemma")[:MAX_SEARCH_RESULTS]
+    return Response({"words": [{"id": word.id, "word": word.lemma} for word in matches]})
 
 
 @api_view(["POST"])
@@ -150,7 +150,7 @@ def generate_story_view(request):
 
     try:
         result = generate_story(
-            [word.word for word in words],
+            [word.lemma for word in words],
             genre=genre,
             paragraph_count=paragraph_count,
         )
@@ -159,7 +159,7 @@ def generate_story_view(request):
         return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
     used_lower = {word.lower() for word in result["used_words"]}
-    used_words = [word for word in words if word.word.lower() in used_lower] or words
+    used_words = [word for word in words if word.lemma.lower() in used_lower] or words
 
     story = Story.objects.create(
         owner=request.user,

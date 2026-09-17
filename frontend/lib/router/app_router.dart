@@ -6,6 +6,8 @@ import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup_screen.dart';
 import '../features/auth/presentation/viewmodels/auth_view_model.dart';
 import '../features/home/presentation/screens/home_screen.dart';
+import '../features/home/presentation/screens/my_stories_screen.dart';
+import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/stories/domain/models/story_detail.dart';
 import '../features/stories/presentation/screens/create_story_screen.dart';
 import '../features/stories/presentation/screens/story_detail_screen.dart';
@@ -22,6 +24,14 @@ GoRouter buildAppRouter(AuthViewModel authViewModel) {
     redirect: (context, state) => authGuard(authViewModel, state),
     routes: [
       GoRoute(path: '/', builder: (context, state) => const _RootScreen()),
+      GoRoute(
+        path: '/my-stories',
+        builder: (context, state) => const MyStoriesScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/signup',

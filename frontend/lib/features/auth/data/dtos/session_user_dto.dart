@@ -10,12 +10,16 @@ class SessionUserDto {
     required this.email,
     required this.name,
     required this.themePreference,
+    required this.cefrLevel,
+    required this.oidcProvider,
   });
 
   final int id;
   final String email;
   final String name;
   final String themePreference;
+  final String cefrLevel;
+  final String oidcProvider;
 
   factory SessionUserDto.fromJson(Map<String, dynamic> json) {
     return SessionUserDto(
@@ -23,10 +27,19 @@ class SessionUserDto {
       email: json['email'] as String? ?? '',
       name: json['name'] as String? ?? '',
       themePreference: json['theme_preference'] as String? ?? 'light',
+      cefrLevel: json['cefr_level'] as String? ?? 'A1',
+      oidcProvider: json['oidc_provider'] as String? ?? '',
     );
   }
 
   SessionUser toDomain() {
-    return SessionUser(id: id, email: email, name: name, themePreference: themePreference);
+    return SessionUser(
+      id: id,
+      email: email,
+      name: name,
+      themePreference: themePreference,
+      cefrLevel: cefrLevel,
+      oidcProvider: oidcProvider,
+    );
   }
 }

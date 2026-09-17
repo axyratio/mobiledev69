@@ -12,4 +12,10 @@ class ThemeController extends ChangeNotifier {
     mode = isDark ? ThemeMode.light : ThemeMode.dark;
     notifyListeners();
   }
+
+  void setMode(ThemeMode value) {
+    if (value == mode) return;
+    mode = value;
+    notifyListeners();
+  }
 }

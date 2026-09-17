@@ -39,4 +39,17 @@ class AuthViewModel extends ChangeNotifier {
     status = AuthStatus.unauthenticated;
     notifyListeners();
   }
+
+  /// Persists a new CEFR level choice (Story Detail highlight filter) and
+  /// updates the in-memory session so every screen sees it immediately.
+  Future<void> updateCefrLevel(String level) async {
+    final result = await _repository.updateCefrLevel(level);
+    switch (result) {
+      case Ok(value: final user):
+        currentUser = user;
+        notifyListeners();
+      case Err():
+        break;
+    }
+  }
 }

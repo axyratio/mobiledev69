@@ -64,6 +64,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<SessionUser>> updateCefrLevel(String level) {
+    return _postForUser(AppConfig.updateCefrLevelUrl, {'cefr_level': level});
+  }
+
+  @override
   Future<Result<void>> logout() async {
     try {
       await _apiClient.dio.get<void>(

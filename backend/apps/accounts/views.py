@@ -17,6 +17,8 @@ def _user_payload(user):
         "email": user.email,
         "name": user.get_full_name() or user.username,
         "theme_preference": user.theme_preference,
+        "cefr_level": user.cefr_level,
+        "oidc_provider": user.oidc_provider,
     }
 
 
@@ -85,6 +87,33 @@ def login_view(request):
 
     auth_login(request, user)
     return JsonResponse(_user_payload(user))
+
+
+@csrf_exempt
+@require_POST
+def update_cefr_level_view(request):
+    """Persists the learner's chosen CEFR level (highlight filter on Story
+    Detail), so it's remembered on every future visit instead of resetting
+    to A1 each time.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Authentication required."}, status=401)
+
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+
+    level = data.get("cefr_level")
+    if level not in User.CefrLevel.values:
+        return JsonResponse(
+            {"detail": f"cefr_level must be one of {', '.join(User.CefrLevel.values)}."},
+            status=400,
+        )
+
+    request.user.cefr_level = level
+    request.user.save(update_fields=["cefr_level"])
+    return JsonResponse(_user_payload(request.user))
 
 
 def current_user_view(request):

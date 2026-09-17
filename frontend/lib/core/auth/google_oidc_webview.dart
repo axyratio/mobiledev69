@@ -30,15 +30,30 @@ class GoogleOAuthScreen extends StatefulWidget {
 class _GoogleOAuthScreenState extends State<GoogleOAuthScreen> {
   bool _isCompleting = false;
 
-  Future<void> _handlePageLoaded(Uri? loadedUrl) async {
-    if (loadedUrl == null || _isCompleting) return;
+  // Intercepted before the navigation actually loads (unlike onLoadStop,
+  // which fires *after* the page renders) — LOGIN_REDIRECT_URL points at a
+  // raw JSON endpoint, and letting the WebView load JSON as a "page" is
+  // unreliable across platforms (some never fire onLoadStop for a
+  // non-HTML response), which is what left the JSON stuck on screen.
+  Future<NavigationActionPolicy> _interceptNavigation(
+    InAppWebViewController controller,
+    NavigationAction action,
+  ) async {
+    final url = action.request.url;
+    if (url == null || _isCompleting) return NavigationActionPolicy.ALLOW;
 
-    final reachedSessionEndpoint = loadedUrl.toString().startsWith(AppConfig.currentUserUrl);
-    if (!reachedSessionEndpoint) return;
+    final reachedSessionEndpoint = url.toString().startsWith(AppConfig.currentUserUrl);
+    if (!reachedSessionEndpoint) return NavigationActionPolicy.ALLOW;
 
     setState(() => _isCompleting = true);
-    await _importSessionCookie(loadedUrl);
+    await _importSessionCookie(url);
     widget.onSuccess();
+    // This screen was pushed with a plain Navigator.push, on top of
+    // go_router's own navigator — go_router's redirect (triggered by
+    // onSuccess updating AuthViewModel) can't dismiss a route it doesn't
+    // manage, so without this the WebView would sit there forever.
+    if (mounted) Navigator.of(context).pop();
+    return NavigationActionPolicy.CANCEL;
   }
 
   Future<void> _importSessionCookie(Uri url) async {
@@ -55,7 +70,7 @@ class _GoogleOAuthScreenState extends State<GoogleOAuthScreen> {
         children: [
           InAppWebView(
             initialUrlRequest: URLRequest(url: WebUri(AppConfig.googleLoginUrl)),
-            onLoadStop: (controller, url) => _handlePageLoaded(url),
+            shouldOverrideUrlLoading: _interceptNavigation,
           ),
           if (_isCompleting)
             const ColoredBox(
