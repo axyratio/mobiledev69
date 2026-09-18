@@ -80,9 +80,12 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def _seed(self, rows: list[dict]) -> tuple[int, int]:
-        word_cache: dict[tuple[str, str], Word] = {}
-        forms_seen: set[tuple[int, str]] = set()
-        forms_seeded = 0
+        # update_or_create per row (~2 round trips/row) is fine against local
+        # sqlite but crawls against a remote Postgres instance (thousands of
+        # network round trips). Batch everything into a handful of bulk
+        # queries instead, regardless of row count.
+        word_defaults: dict[tuple[str, str], dict] = {}
+        forms_by_word_key: dict[tuple[str, str], dict[str, str]] = {}
 
         for row in rows:
             lemma = row["lemma"].strip()
@@ -92,32 +95,59 @@ class Command(BaseCommand):
                 continue
 
             word_key = (lemma, pos)
-            word = word_cache.get(word_key)
-            if word is None:
-                word, _ = Word.objects.update_or_create(
-                    lemma=lemma,
-                    pos=pos,
-                    defaults={
-                        "word_type": row["word_type"].strip() or Word.WordType.SINGLE,
-                        "cefr_level": row["cefr_level"].strip(),
-                        "definition_en": row["definition_en"].strip(),
-                        "definition_th": row["definition_th"].strip(),
-                        "source": row["source"].strip() or "oxford3000",
-                        "is_active": True,
-                    },
-                )
-                word_cache[word_key] = word
+            if word_key not in word_defaults:
+                word_defaults[word_key] = {
+                    "word_type": row["word_type"].strip() or Word.WordType.SINGLE,
+                    "cefr_level": row["cefr_level"].strip(),
+                    "definition_en": row["definition_en"].strip(),
+                    "definition_th": row["definition_th"].strip(),
+                    "source": row["source"].strip() or "oxford3000",
+                    "is_active": True,
+                }
+            forms_by_word_key.setdefault(word_key, {})[form] = row["form_type"].strip()
 
-            form_key = (word.id, form)
-            if form_key in forms_seen:
-                continue
-            forms_seen.add(form_key)
+        existing_words = {(w.lemma, w.pos): w for w in Word.objects.all()}
 
-            WordForm.objects.update_or_create(
-                word=word,
-                form=form,
-                defaults={"form_type": row["form_type"].strip()},
-            )
-            forms_seeded += 1
+        to_create_items = [
+            (key, Word(lemma=key[0], pos=key[1], **defaults))
+            for key, defaults in word_defaults.items()
+            if key not in existing_words
+        ]
+        Word.objects.bulk_create([w for _, w in to_create_items], batch_size=1000)
 
-        return len(word_cache), forms_seeded
+        word_lookup = dict(existing_words)
+        word_lookup.update(to_create_items)
+
+        word_fields = ["word_type", "cefr_level", "definition_en", "definition_th", "source", "is_active"]
+        to_update_words = []
+        for key, word in existing_words.items():
+            for field, value in word_defaults[key].items():
+                setattr(word, field, value)
+            to_update_words.append(word)
+        if to_update_words:
+            Word.objects.bulk_update(to_update_words, fields=word_fields, batch_size=1000)
+
+        existing_forms = {
+            (wf.word_id, wf.form): wf
+            for wf in WordForm.objects.filter(word_id__in=[w.id for w in word_lookup.values()])
+        }
+
+        to_create_forms = []
+        to_update_forms = []
+        for key, forms in forms_by_word_key.items():
+            word = word_lookup[key]
+            for form, form_type in forms.items():
+                form_key = (word.id, form)
+                existing_form = existing_forms.get(form_key)
+                if existing_form is None:
+                    to_create_forms.append(WordForm(word=word, form=form, form_type=form_type))
+                elif existing_form.form_type != form_type:
+                    existing_form.form_type = form_type
+                    to_update_forms.append(existing_form)
+
+        WordForm.objects.bulk_create(to_create_forms, batch_size=1000)
+        if to_update_forms:
+            WordForm.objects.bulk_update(to_update_forms, fields=["form_type"], batch_size=1000)
+
+        forms_seeded = sum(len(forms) for forms in forms_by_word_key.values())
+        return len(word_defaults), forms_seeded
