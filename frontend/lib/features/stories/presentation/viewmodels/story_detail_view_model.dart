@@ -15,8 +15,10 @@ class StoryDetailViewModel extends ChangeNotifier {
     required int storyId,
     StoryDetail? preloaded,
     String initialLevel = 'A1',
+    bool filterByLevel = true,
   }) : _storyId = storyId,
-       selectedLevel = initialLevel {
+       selectedLevel = initialLevel,
+       _filterByLevel = filterByLevel {
     if (preloaded != null) {
       story = preloaded;
       isLoading = false;
@@ -36,13 +38,18 @@ class StoryDetailViewModel extends ChangeNotifier {
   /// above it are highlighted in the body.
   final String selectedLevel;
 
+  /// Whether [selectedLevel] should limit highlighting at all ("highlight
+  /// by my level" toggle in Settings). Off means every vocabulary-bank word
+  /// found in the story is highlighted, regardless of level.
+  final bool _filterByLevel;
+
   /// Target words to highlight in the body: those matching [selectedLevel]
-  /// or above (words below it are treated as already known).
+  /// or above when the level filter is on, or all of them when it's off.
   List<String> get highlightedWords {
     final story = this.story;
     if (story == null) return const [];
     return story.words
-        .where((word) => cefrLevelMeetsSelection(word.cefrLevel, selectedLevel))
+        .where((word) => !_filterByLevel || cefrLevelMeetsSelection(word.cefrLevel, selectedLevel))
         .map((word) => word.word)
         .toList();
   }
@@ -50,12 +57,13 @@ class StoryDetailViewModel extends ChangeNotifier {
   /// Bonus vocabulary the LLM happened to use (A2+ server-side floor),
   /// further filtered by [selectedLevel] just like [highlightedWords] so
   /// raising the level hides easy bonus words too — highlighted in a
-  /// different color than target words.
+  /// different color than target words. Unfiltered when the level filter
+  /// is off.
   List<String> get extraHighlightedWords {
     final story = this.story;
     if (story == null) return const [];
     return story.extraWords
-        .where((word) => cefrLevelMeetsSelection(word.cefrLevel, selectedLevel))
+        .where((word) => !_filterByLevel || cefrLevelMeetsSelection(word.cefrLevel, selectedLevel))
         .map((word) => word.word)
         .toList();
   }

@@ -9,6 +9,8 @@ class SessionUser {
     required this.name,
     required this.themePreference,
     required this.cefrLevel,
+    required this.cefrLevelFilterEnabled,
+    required this.highlightFilterByLevelEnabled,
     required this.oidcProvider,
   });
 
@@ -20,6 +22,15 @@ class SessionUser {
   /// The learner's own CEFR level (default A1) — Story Detail only
   /// highlights target words at or above it.
   final String cefrLevel;
+
+  /// Whether the create-story word randomizer should be limited to
+  /// [cefrLevel] and below instead of the whole vocabulary bank.
+  final bool cefrLevelFilterEnabled;
+
+  /// Whether Story Detail highlighting (target and bonus words alike) is
+  /// limited to [cefrLevel] and above. Off means every vocabulary-bank word
+  /// found in the story gets highlighted, regardless of level.
+  final bool highlightFilterByLevelEnabled;
 
   /// The OIDC provider this account is linked to (e.g. "google"), or empty
   /// for an email/password account — shown as a badge on Settings.

@@ -73,7 +73,13 @@ class _HeaderRow extends StatelessWidget {
         ),
         _IconSquareButton(
           tooltip: 'Toggle theme',
-          onPressed: () => context.read<ThemeController>().toggle(),
+          onPressed: () {
+            final themeController = context.read<ThemeController>();
+            themeController.toggle();
+            context
+                .read<AuthViewModel>()
+                .updateThemePreference(themeController.isDark ? 'dark' : 'light');
+          },
           icon: context.watch<ThemeController>().isDark
               ? Icons.light_mode_outlined
               : Icons.dark_mode_outlined,

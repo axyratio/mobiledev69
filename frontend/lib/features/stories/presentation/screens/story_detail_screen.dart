@@ -26,6 +26,8 @@ class StoryDetailScreen extends StatelessWidget {
         storyId: storyId,
         preloaded: preloaded,
         initialLevel: context.read<AuthViewModel>().currentUser?.cefrLevel ?? 'A1',
+        filterByLevel:
+            context.read<AuthViewModel>().currentUser?.highlightFilterByLevelEnabled ?? true,
       ),
       child: const _StoryDetailView(),
     );

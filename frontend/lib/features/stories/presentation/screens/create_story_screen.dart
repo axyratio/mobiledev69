@@ -151,12 +151,26 @@ class _ProgressSegment extends StatelessWidget {
   }
 }
 
-class _PickCountStep extends StatelessWidget {
+class _PickCountStep extends StatefulWidget {
   const _PickCountStep({required this.viewModel});
   final CreateStoryViewModel viewModel;
 
   @override
+  State<_PickCountStep> createState() => _PickCountStepState();
+}
+
+class _PickCountStepState extends State<_PickCountStep> {
+  final ScrollController _pageScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _pageScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final viewModel = widget.viewModel;
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -168,6 +182,7 @@ class _PickCountStep extends StatelessWidget {
         ),
         Expanded(
           child: SingleChildScrollView(
+            controller: _pageScrollController,
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +219,10 @@ class _PickCountStep extends StatelessWidget {
                 ),
                 if (viewModel.wordSelectionMode == WordSelectionMode.manual) ...[
                   const SizedBox(height: 16),
-                  WordSearchPicker(viewModel: viewModel),
+                  WordSearchPicker(
+                    viewModel: viewModel,
+                    pageScrollController: _pageScrollController,
+                  ),
                 ],
                 const SizedBox(height: 22),
                 ParagraphCountControl(

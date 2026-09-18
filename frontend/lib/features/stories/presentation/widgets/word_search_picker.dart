@@ -6,10 +6,20 @@ import '../viewmodels/create_story_view_model.dart';
 /// random sample: search the word bank, tick words as checkboxes, and once
 /// [CreateStoryViewModel.wordCount] words are picked the remaining checkboxes
 /// disable themselves — only unticking a picked word frees up a slot again.
+///
+/// The results list gets scroll priority (it's the innermost scrollable
+/// under the finger), but once it's exhausted, further drag in the same
+/// gesture hands off to [pageScrollController] instead of getting stuck —
+/// so one continuous drag can scroll the results then the whole page.
 class WordSearchPicker extends StatelessWidget {
-  const WordSearchPicker({super.key, required this.viewModel});
+  const WordSearchPicker({
+    super.key,
+    required this.viewModel,
+    required this.pageScrollController,
+  });
 
   final CreateStoryViewModel viewModel;
+  final ScrollController pageScrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -75,22 +85,32 @@ class WordSearchPicker extends StatelessWidget {
             ),
             child: viewModel.searchResults.isEmpty
                 ? const SizedBox.shrink()
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: viewModel.searchResults.length,
-                    itemBuilder: (context, index) {
-                      final word = viewModel.searchResults[index];
-                      final isSelected = viewModel.isWordSelected(word);
-                      final isSelectable = viewModel.isWordSelectable(word);
-                      return CheckboxListTile(
-                        dense: true,
-                        title: Text(word.word),
-                        value: isSelected,
-                        onChanged: isSelectable
-                            ? (_) => viewModel.toggleWordSelection(word)
-                            : null,
-                      );
+                : NotificationListener<OverscrollNotification>(
+                    onNotification: (notification) {
+                      final position = pageScrollController.position;
+                      final target = (position.pixels + notification.overscroll)
+                          .clamp(position.minScrollExtent, position.maxScrollExtent);
+                      pageScrollController.jumpTo(target);
+                      return false;
                     },
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: viewModel.searchResults.length,
+                      itemBuilder: (context, index) {
+                        final word = viewModel.searchResults[index];
+                        final isSelected = viewModel.isWordSelected(word);
+                        final isSelectable = viewModel.isWordSelectable(word);
+                        return CheckboxListTile(
+                          dense: true,
+                          title: Text(word.word),
+                          value: isSelected,
+                          onChanged: isSelectable
+                              ? (_) => viewModel.toggleWordSelection(word)
+                              : null,
+                        );
+                      },
+                    ),
                   ),
           ),
       ],

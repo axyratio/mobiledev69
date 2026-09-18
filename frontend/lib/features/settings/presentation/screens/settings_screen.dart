@@ -39,7 +39,12 @@ class SettingsScreen extends StatelessWidget {
                 child: _SegmentedControl<ThemeMode>(
                   value: themeController.mode,
                   segments: const {ThemeMode.light: 'สว่าง', ThemeMode.dark: 'มืด'},
-                  onChanged: themeController.setMode,
+                  onChanged: (mode) {
+                    themeController.setMode(mode);
+                    context
+                        .read<AuthViewModel>()
+                        .updateThemePreference(mode == ThemeMode.dark ? 'dark' : 'light');
+                  },
                 ),
               ),
             ),
@@ -58,8 +63,36 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'ใช้กำหนดว่าคำศัพท์ระดับไหนจะถูก highlight ในหน้ารายละเอียดเรื่อง '
-                      'คำที่ง่ายกว่าระดับนี้จะไม่ถูก highlight',
+                      'ระดับนี้เป็นเกณฑ์ร่วมของ 2 การตั้งค่าด้านล่าง — เปิดสวิตช์ไหนไว้ '
+                      'ระดับนี้จะมีผลกับส่วนนั้น ถ้าปิดไว้ การเลือกระดับที่นี่จะไม่มีผล',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    _SwitchRow(
+                      icon: Icons.highlight_alt_outlined,
+                      label: 'Highlight คำศัพท์ตามระดับของฉัน',
+                      value: user?.highlightFilterByLevelEnabled ?? true,
+                      onChanged: (enabled) => context
+                          .read<AuthViewModel>()
+                          .updateHighlightFilterByLevelEnabled(enabled),
+                      horizontalPadding: 0,
+                    ),
+                    Text(
+                      'คำที่ง่ายกว่าระดับนี้จะไม่ถูก highlight ในหน้ารายละเอียดเรื่อง',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    _SwitchRow(
+                      icon: Icons.filter_alt_outlined,
+                      label: 'สุ่มคำศัพท์ตามระดับของฉัน',
+                      value: user?.cefrLevelFilterEnabled ?? false,
+                      onChanged: (enabled) => context
+                          .read<AuthViewModel>()
+                          .updateCefrLevelFilterEnabled(enabled),
+                      horizontalPadding: 0,
+                    ),
+                    Text(
+                      'คำที่สุ่มให้ตอนสร้างเรื่องใหม่จะเลือกจากระดับนี้ขึ้นไปเท่านั้น',
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -220,6 +253,40 @@ class _SegmentedControl<T> extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.horizontalPadding = 16,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(label, style: theme.textTheme.bodyLarge),
+          ),
+          Switch.adaptive(value: value, onChanged: onChanged),
         ],
       ),
     );

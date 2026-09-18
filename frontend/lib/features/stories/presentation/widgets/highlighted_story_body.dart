@@ -79,7 +79,12 @@ class _HighlightedStoryBodyState extends State<HighlightedStoryBody> {
             padding: const EdgeInsets.only(bottom: 14),
             child: RichText(
               text: TextSpan(
-                children: _highlightedSpans(paragraph, baseStyle, mainStyle, extraStyle),
+                children: [
+                  // Fixed-width first-line indent (a "tab") so each
+                  // paragraph reads distinctly, matching mockup 1h.
+                  const WidgetSpan(child: SizedBox(width: 28)),
+                  ..._highlightedSpans(paragraph, baseStyle, mainStyle, extraStyle),
+                ],
               ),
             ),
           ),

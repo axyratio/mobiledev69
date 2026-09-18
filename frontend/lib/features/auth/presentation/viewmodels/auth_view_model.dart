@@ -40,10 +40,49 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persists a new theme choice (Settings) and updates the in-memory
+  /// session so every screen sees it immediately.
+  Future<void> updateThemePreference(String theme) async {
+    final result = await _repository.updateThemePreference(theme);
+    switch (result) {
+      case Ok(value: final user):
+        currentUser = user;
+        notifyListeners();
+      case Err():
+        break;
+    }
+  }
+
   /// Persists a new CEFR level choice (Story Detail highlight filter) and
   /// updates the in-memory session so every screen sees it immediately.
   Future<void> updateCefrLevel(String level) async {
     final result = await _repository.updateCefrLevel(level);
+    switch (result) {
+      case Ok(value: final user):
+        currentUser = user;
+        notifyListeners();
+      case Err():
+        break;
+    }
+  }
+
+  /// Persists the "randomize by my level" toggle (Settings) and updates the
+  /// in-memory session so every screen sees it immediately.
+  Future<void> updateCefrLevelFilterEnabled(bool enabled) async {
+    final result = await _repository.updateCefrLevelFilterEnabled(enabled);
+    switch (result) {
+      case Ok(value: final user):
+        currentUser = user;
+        notifyListeners();
+      case Err():
+        break;
+    }
+  }
+
+  /// Persists the "highlight by my level" toggle (Settings) and updates the
+  /// in-memory session so every screen sees it immediately.
+  Future<void> updateHighlightFilterByLevelEnabled(bool enabled) async {
+    final result = await _repository.updateHighlightFilterByLevelEnabled(enabled);
     switch (result) {
       case Ok(value: final user):
         currentUser = user;

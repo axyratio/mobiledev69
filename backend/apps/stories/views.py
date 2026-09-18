@@ -27,6 +27,10 @@ logger = logging.getLogger(__name__)
 TODAY_WORD_COUNT = 4
 BANGKOK = ZoneInfo("Asia/Bangkok")
 
+# Same ordering used by serializers._CEFR_ORDER — CEFR levels are easiest to
+# hardest, so "words at or below my level" is a prefix of this list.
+_CEFR_ORDER = [choice.value for choice in Word.CefrLevel]
+
 # Fixed chip options shown on the create form (mockup 1e) — allowlisted
 # rather than free text so the optional genre can never carry a prompt
 # injection payload (NFR-03).
@@ -78,7 +82,11 @@ def random_words_view(request):
     """Samples random vocabulary words for the create-story flow (FR-05).
 
     Accepts an optional `exclude_ids` so the client can re-roll the whole
-    set or a single word without repeating what's already shown.
+    set or a single word without repeating what's already shown. When the
+    learner has turned on "randomize by my level" in Settings, the pool is
+    narrowed to their `cefr_level` and above instead of the whole bank —
+    words below it are treated as already known, same cutoff direction as
+    the Story Detail highlighter.
     """
     try:
         count = int(request.data.get("count"))
@@ -96,7 +104,12 @@ def random_words_view(request):
     if not isinstance(exclude_ids, list):
         return Response({"detail": "exclude_ids must be a list."}, status=status.HTTP_400_BAD_REQUEST)
 
-    word_ids = list(Word.objects.exclude(id__in=exclude_ids).values_list("id", flat=True))
+    word_pool = Word.objects.exclude(id__in=exclude_ids)
+    if request.user.cefr_level_filter_enabled:
+        allowed_levels = _CEFR_ORDER[_CEFR_ORDER.index(request.user.cefr_level) :]
+        word_pool = word_pool.filter(cefr_level__in=allowed_levels)
+
+    word_ids = list(word_pool.values_list("id", flat=True))
     if len(word_ids) < count:
         return Response({"detail": "Not enough words available."}, status=status.HTTP_400_BAD_REQUEST)
 

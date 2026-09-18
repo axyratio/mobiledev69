@@ -18,6 +18,8 @@ def _user_payload(user):
         "name": user.get_full_name() or user.username,
         "theme_preference": user.theme_preference,
         "cefr_level": user.cefr_level,
+        "cefr_level_filter_enabled": user.cefr_level_filter_enabled,
+        "highlight_filter_by_level_enabled": user.highlight_filter_by_level_enabled,
         "oidc_provider": user.oidc_provider,
     }
 
@@ -91,6 +93,32 @@ def login_view(request):
 
 @csrf_exempt
 @require_POST
+def update_theme_preference_view(request):
+    """Persists the learner's chosen theme (FR-17/FR-18 Dark Mode), so it's
+    remembered on every future visit instead of resetting each session.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Authentication required."}, status=401)
+
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+
+    theme = data.get("theme_preference")
+    if theme not in User.ThemePreference.values:
+        return JsonResponse(
+            {"detail": f"theme_preference must be one of {', '.join(User.ThemePreference.values)}."},
+            status=400,
+        )
+
+    request.user.theme_preference = theme
+    request.user.save(update_fields=["theme_preference"])
+    return JsonResponse(_user_payload(request.user))
+
+
+@csrf_exempt
+@require_POST
 def update_cefr_level_view(request):
     """Persists the learner's chosen CEFR level (highlight filter on Story
     Detail), so it's remembered on every future visit instead of resetting
@@ -113,6 +141,56 @@ def update_cefr_level_view(request):
 
     request.user.cefr_level = level
     request.user.save(update_fields=["cefr_level"])
+    return JsonResponse(_user_payload(request.user))
+
+
+@csrf_exempt
+@require_POST
+def update_cefr_level_filter_view(request):
+    """Persists whether the create-story word randomizer should be limited
+    to the learner's own CEFR level and below (Settings toggle).
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Authentication required."}, status=401)
+
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+
+    enabled = data.get("cefr_level_filter_enabled")
+    if not isinstance(enabled, bool):
+        return JsonResponse(
+            {"detail": "cefr_level_filter_enabled must be a boolean."}, status=400
+        )
+
+    request.user.cefr_level_filter_enabled = enabled
+    request.user.save(update_fields=["cefr_level_filter_enabled"])
+    return JsonResponse(_user_payload(request.user))
+
+
+@csrf_exempt
+@require_POST
+def update_highlight_level_filter_view(request):
+    """Persists whether Story Detail highlighting should be limited to the
+    learner's own CEFR level and above (Settings toggle).
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Authentication required."}, status=401)
+
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+
+    enabled = data.get("highlight_filter_by_level_enabled")
+    if not isinstance(enabled, bool):
+        return JsonResponse(
+            {"detail": "highlight_filter_by_level_enabled must be a boolean."}, status=400
+        )
+
+    request.user.highlight_filter_by_level_enabled = enabled
+    request.user.save(update_fields=["highlight_filter_by_level_enabled"])
     return JsonResponse(_user_payload(request.user))
 
 

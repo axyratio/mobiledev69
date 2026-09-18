@@ -64,8 +64,29 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<SessionUser>> updateThemePreference(String theme) {
+    return _postForUser(AppConfig.updateThemePreferenceUrl, {'theme_preference': theme});
+  }
+
+  @override
   Future<Result<SessionUser>> updateCefrLevel(String level) {
     return _postForUser(AppConfig.updateCefrLevelUrl, {'cefr_level': level});
+  }
+
+  @override
+  Future<Result<SessionUser>> updateCefrLevelFilterEnabled(bool enabled) {
+    return _postForUser(
+      AppConfig.updateCefrLevelFilterUrl,
+      {'cefr_level_filter_enabled': enabled},
+    );
+  }
+
+  @override
+  Future<Result<SessionUser>> updateHighlightFilterByLevelEnabled(bool enabled) {
+    return _postForUser(
+      AppConfig.updateHighlightLevelFilterUrl,
+      {'highlight_filter_by_level_enabled': enabled},
+    );
   }
 
   @override

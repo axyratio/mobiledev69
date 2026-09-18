@@ -11,6 +11,8 @@ class SessionUserDto {
     required this.name,
     required this.themePreference,
     required this.cefrLevel,
+    required this.cefrLevelFilterEnabled,
+    required this.highlightFilterByLevelEnabled,
     required this.oidcProvider,
   });
 
@@ -19,6 +21,8 @@ class SessionUserDto {
   final String name;
   final String themePreference;
   final String cefrLevel;
+  final bool cefrLevelFilterEnabled;
+  final bool highlightFilterByLevelEnabled;
   final String oidcProvider;
 
   factory SessionUserDto.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,9 @@ class SessionUserDto {
       name: json['name'] as String? ?? '',
       themePreference: json['theme_preference'] as String? ?? 'light',
       cefrLevel: json['cefr_level'] as String? ?? 'A1',
+      cefrLevelFilterEnabled: json['cefr_level_filter_enabled'] as bool? ?? false,
+      highlightFilterByLevelEnabled:
+          json['highlight_filter_by_level_enabled'] as bool? ?? true,
       oidcProvider: json['oidc_provider'] as String? ?? '',
     );
   }
@@ -39,6 +46,8 @@ class SessionUserDto {
       name: name,
       themePreference: themePreference,
       cefrLevel: cefrLevel,
+      cefrLevelFilterEnabled: cefrLevelFilterEnabled,
+      highlightFilterByLevelEnabled: highlightFilterByLevelEnabled,
       oidcProvider: oidcProvider,
     );
   }

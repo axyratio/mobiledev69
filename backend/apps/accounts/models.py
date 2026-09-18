@@ -11,6 +11,13 @@ class User(AbstractUser):
     `cefr_level` is the learner's own level: on the Story Detail screen, only
     target words at or above it get highlighted (words below it are treated
     as already known).
+    `cefr_level_filter_enabled` opts the create-story word randomizer into
+    only drawing from `cefr_level` and above, instead of the whole bank
+    (words below it are treated as already known — same direction as the
+    Story Detail highlighter).
+    `highlight_filter_by_level_enabled` opts the Story Detail highlighter
+    into the same `cefr_level` cutoff for both target and bonus words;
+    turned off, every vocabulary-bank word in the story gets highlighted.
     """
 
     class ThemePreference(models.TextChoices):
@@ -35,6 +42,8 @@ class User(AbstractUser):
         choices=CefrLevel.choices,
         default=CefrLevel.A1,
     )
+    cefr_level_filter_enabled = models.BooleanField(default=False)
+    highlight_filter_by_level_enabled = models.BooleanField(default=True)
 
     class Meta:
         constraints = [

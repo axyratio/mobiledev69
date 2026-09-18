@@ -66,9 +66,24 @@ class _AppRouterHost extends StatefulWidget {
 class _AppRouterHostState extends State<_AppRouterHost> {
   late final GoRouter _router = buildAppRouter(context.read<AuthViewModel>());
 
+  // Seeds ThemeController from the session's saved preference the first
+  // time it loads, then leaves it alone so later manual toggles stick.
+  bool _themeSyncedFromSession = false;
+
   @override
   Widget build(BuildContext context) {
-    final themeMode = context.watch<ThemeController>().mode;
+    final user = context.watch<AuthViewModel>().currentUser;
+    final themeController = context.watch<ThemeController>();
+
+    if (!_themeSyncedFromSession && user != null) {
+      _themeSyncedFromSession = true;
+      final savedMode = user.themePreference == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      if (savedMode != themeController.mode) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => themeController.setMode(savedMode));
+      }
+    }
+
+    final themeMode = themeController.mode;
     return MaterialApp.router(
       title: 'AI Story Generator',
       theme: AppTheme.light,
