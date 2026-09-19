@@ -7,7 +7,7 @@ databases:
 
 services:
   - type: web
-    name: read-english-story-backend
+    name: mobiledev69
     runtime: python
     plan: free
     region: singapore
@@ -49,4 +49,4 @@ services:
     staticPublishPath: build/web
     envVars:
       - key: BACKEND_BASE_URL
-        value: https://read-english-story-backend.onrender.com
+        value: https://mobiledev69.onrender.com
