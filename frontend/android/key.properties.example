@@ -1,0 +1,8 @@
+## Copy this file to android/key.properties (already gitignored) and fill
+## in the real values after generating a release keystore — see the
+## keytool command in the project chat/README. Never commit the real file
+## or the .jks it points at.
+storePassword=REPLACE_ME
+keyPassword=REPLACE_ME
+keyAlias=upload
+storeFile=C:/Users/USER/keystores/read-english-story-upload.jks
