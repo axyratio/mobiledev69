@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/auth/google_oidc_webview.dart';
-import '../../../../core/auth/session_store.dart';
+import '../../../../core/auth/google_oauth.dart';
 import '../../domain/auth_repository.dart';
 import '../viewmodels/auth_view_model.dart';
 import '../viewmodels/signup_view_model.dart';
 import '../widgets/auth_scaffold.dart';
 
-/// Email/password sign-up, plus a "Continue with Google" option that hosts
-/// the OIDC flow in an embedded web view (allauth creates the account
+/// Email/password sign-up, plus a "Continue with Google" option that runs
+/// the OIDC flow in the system browser (allauth creates the account
 /// transparently on first Google sign-in, same as [LoginScreen]'s flow).
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
@@ -76,18 +75,7 @@ class _SignupViewState extends State<_SignupView> {
     // errorMessage is already shown below.
   }
 
-  void _continueWithGoogle() {
-    final sessionStore = context.read<SessionStore>();
-    final authViewModel = context.read<AuthViewModel>();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GoogleOAuthScreen(
-          sessionStore: sessionStore,
-          onSuccess: authViewModel.completeLogin,
-        ),
-      ),
-    );
-  }
+  void _continueWithGoogle() => signInWithGoogle(context);
 
   @override
   Widget build(BuildContext context) {

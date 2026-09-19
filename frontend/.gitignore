@@ -1,9 +1,6 @@
 .dart_tool/
 .flutter-plugin-dependencies
 build/
-android/
-ios/
-web/
 linux/
 macos/
 windows/
@@ -11,3 +8,30 @@ windows/
 .pub-cache/
 .pub/
 *.iml
+
+# Android platform folder is tracked (AndroidManifest.xml carries the
+# flutter_web_auth_2 CallbackActivity intent-filter other collaborators/CI
+# need) — only its generated/local build artifacts are ignored.
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/key.properties
+android/**/GeneratedPluginRegistrant.java
+android/app/build/
+
+# iOS/web platform folders are tracked too, for the same reason (custom
+# URL scheme setup, index.html/manifest.json branding).
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+web/generated_plugin_registrant.dart

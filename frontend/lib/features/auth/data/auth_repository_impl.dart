@@ -50,6 +50,11 @@ class AuthRepositoryImpl implements AuthRepository {
     });
   }
 
+  @override
+  Future<Result<SessionUser>> loginWithGoogleIdToken(String idToken) {
+    return _postForUser(AppConfig.googleTokenLoginUrl, {'id_token': idToken});
+  }
+
   Future<Result<SessionUser>> _postForUser(String url, Map<String, dynamic> data) async {
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(url, data: data);

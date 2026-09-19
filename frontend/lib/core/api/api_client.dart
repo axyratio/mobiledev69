@@ -13,7 +13,14 @@ class ApiClient {
 
   static Future<ApiClient> create({required PersistCookieJar cookieJar}) async {
     final dio = Dio(
-      BaseOptions(validateStatus: (status) => status != null && status < 500),
+      BaseOptions(
+        validateStatus: (status) => status != null && status < 500,
+        // Flutter web only: the browser's XHR adapter reads this to decide
+        // whether to send/accept cookies on a cross-origin request (the
+        // frontend and backend are on different Render domains). Ignored
+        // on mobile, where CookieManager below does the equivalent job.
+        extra: {'withCredentials': true},
+      ),
     );
     dio.interceptors.add(CookieManager(cookieJar));
     return ApiClient._(dio);

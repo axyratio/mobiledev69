@@ -93,10 +93,17 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
+
+# Also read directly (not just via SOCIALACCOUNT_PROVIDERS below) so
+# apps/accounts/views.py can verify a Google ID token from the mobile app's
+# native Sign-In SDK against the same web client — see
+# google_token_login_view.
+GOOGLE_OIDC_CLIENT_ID = env.GOOGLE_OIDC_CLIENT_ID
+
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APP": {
-            "client_id": env.GOOGLE_OIDC_CLIENT_ID,
+            "client_id": GOOGLE_OIDC_CLIENT_ID,
             "secret": env.GOOGLE_OIDC_CLIENT_SECRET,
             "key": "",
         },
@@ -106,12 +113,16 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# Login/logout complete the OIDC redirect in a single GET (no intermediate confirm page),
-# so the mobile/web client gets a clean session-established or session-cleared result.
+# Login/logout complete the OIDC redirect in a single GET (no intermediate confirm
+# page). LOGIN_REDIRECT_URL only matters for a real browser tab (Flutter web, FR-01)
+# — the mobile app doesn't use this redirect flow at all (see
+# google_token_login_view). For web, landing on the raw /api/auth/me/ JSON would
+# leave that JSON on screen instead of the app, so both login and logout send the
+# browser back to the frontend itself.
 SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGOUT_ON_GET = True
 
-LOGIN_REDIRECT_URL = "/api/auth/me/"
+LOGIN_REDIRECT_URL = env.FRONTEND_URL
 ACCOUNT_LOGOUT_REDIRECT_URL = env.FRONTEND_URL
 
 # Session-only auth is sufficient for Day 1; session expires -> FR-03 redirect-to-login

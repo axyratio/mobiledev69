@@ -17,6 +17,10 @@ abstract class AuthRepository {
     required String password,
   });
 
+  /// Trades a Google ID token (from the mobile app's native Sign-In SDK)
+  /// for a real session cookie.
+  Future<Result<SessionUser>> loginWithGoogleIdToken(String idToken);
+
   Future<Result<void>> logout();
 
   /// Persists the learner's chosen theme (FR-17/FR-18 Dark Mode), so it's
