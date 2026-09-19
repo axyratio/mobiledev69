@@ -16,3 +16,6 @@ db.sqlite3
 staticfiles/
 
 data/*
+empty_def_en.json
+examples_by_pos.json
+DEPLOY_CHECKLIST.md
