@@ -1,6 +1,7 @@
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Thin wrapper around the shared [Dio] instance every repository talks
 /// through. This is the "Service" layer's HTTP client (ApiClient) — it
@@ -22,7 +23,13 @@ class ApiClient {
         extra: {'withCredentials': true},
       ),
     );
-    dio.interceptors.add(CookieManager(cookieJar));
+    // dio_cookie_manager asserts against being constructed at all on web
+    // ("Don't use the manager in Web environments") — the browser already
+    // handles cookies natively there via withCredentials above, so this
+    // interceptor is both unnecessary and disallowed on that platform.
+    if (!kIsWeb) {
+      dio.interceptors.add(CookieManager(cookieJar));
+    }
     return ApiClient._(dio);
   }
 }

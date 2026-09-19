@@ -46,6 +46,11 @@ Future<void> _signInOnMobile(BuildContext context) async {
 
   GoogleSignInAccount? account;
   try {
+    // Google Play Services otherwise remembers the last account picked
+    // for this app and signs back in silently, skipping the picker —
+    // signOut() only clears that per-app memory (not the device's Google
+    // session), so the picker shows again every time.
+    await googleSignIn.signOut();
     account = await googleSignIn.signIn();
   } catch (error) {
     // User cancelled the native sheet — not an error worth surfacing.
