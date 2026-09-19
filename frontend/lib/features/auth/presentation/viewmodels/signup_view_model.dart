@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/result.dart';
+import '../../../../core/safe_change_notifier.dart';
 import '../../domain/auth_repository.dart';
 import 'auth_view_model.dart';
 
 /// Screen-scoped state + business logic for [SignupScreen] (View talks to
 /// this, never to [AuthRepository] directly).
-class SignupViewModel extends ChangeNotifier {
+class SignupViewModel extends ChangeNotifier with SafeChangeNotifier {
   SignupViewModel({required AuthRepository repository, required AuthViewModel authViewModel})
       : _repository = repository,
         _authViewModel = authViewModel;
@@ -41,7 +42,7 @@ class SignupViewModel extends ChangeNotifier {
         return true;
       case Err(message: final message):
         errorMessage = message;
-        notifyListeners();
+        safeNotifyListeners();
         return false;
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/result.dart';
+import '../../../../core/safe_change_notifier.dart';
 import '../../domain/home_repository.dart';
 import '../../domain/models/story_summary.dart';
 
@@ -10,7 +11,7 @@ enum StorySortMode { recent, titleAz, mostWords }
 /// with client-side search (FR-19) and sort (FR-20) — the dataset is small
 /// enough that there's no need for a server round trip per keystroke or
 /// chip tap.
-class MyStoriesViewModel extends ChangeNotifier {
+class MyStoriesViewModel extends ChangeNotifier with SafeChangeNotifier {
   MyStoriesViewModel(this._repository) {
     load();
   }
@@ -75,7 +76,7 @@ class MyStoriesViewModel extends ChangeNotifier {
     }
 
     isLoading = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> retry() => load();

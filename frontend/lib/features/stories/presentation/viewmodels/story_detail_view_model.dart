@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/cefr/cefr_level.dart';
 import '../../../../core/result.dart';
+import '../../../../core/safe_change_notifier.dart';
 import '../../domain/models/story_detail.dart';
 import '../../domain/models/story_vocab_word.dart';
 import '../../domain/stories_repository.dart';
@@ -9,7 +10,7 @@ import '../../domain/stories_repository.dart';
 /// Loads a single story for the Detail screen (FR-09). Accepts an optional
 /// [preloaded] story (the one just returned by `generateStory`) so tapping
 /// straight from the create flow doesn't re-fetch what's already in hand.
-class StoryDetailViewModel extends ChangeNotifier {
+class StoryDetailViewModel extends ChangeNotifier with SafeChangeNotifier {
   StoryDetailViewModel(
     this._repository, {
     required int storyId,
@@ -95,7 +96,7 @@ class StoryDetailViewModel extends ChangeNotifier {
     }
 
     isLoading = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> retry() => load();
@@ -107,7 +108,7 @@ class StoryDetailViewModel extends ChangeNotifier {
     switch (result) {
       case Ok(value: final updated):
         story = updated;
-        notifyListeners();
+        safeNotifyListeners();
         return const Result.ok(null);
       case Err(message: final message):
         return Result.err(message);

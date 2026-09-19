@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/result.dart';
+import '../../../../core/safe_change_notifier.dart';
 import '../../domain/home_repository.dart';
 import '../../domain/models/story_summary.dart';
 
@@ -10,12 +11,21 @@ const _recentPreviewCount = 2;
 /// today's word sample, and a small preview of the most recent stories.
 /// The full searchable/sortable list lives on My Stories instead
 /// (FR-19/FR-20) — this screen is a launchpad, not the list itself.
-class HomeViewModel extends ChangeNotifier {
+class HomeViewModel extends ChangeNotifier with SafeChangeNotifier {
   HomeViewModel(this._repository) {
+    // TEMP DEBUG — remove once the disposal race is diagnosed.
+    debugPrint('[HomeViewModel] created hashCode=$hashCode');
     load();
   }
 
   final HomeRepository _repository;
+
+  // TEMP DEBUG — remove once the disposal race is diagnosed.
+  @override
+  void dispose() {
+    debugPrint('[HomeViewModel] dispose() hashCode=$hashCode');
+    super.dispose();
+  }
 
   bool isLoading = true;
   String? errorMessage;
@@ -62,7 +72,7 @@ class HomeViewModel extends ChangeNotifier {
     }
 
     isLoading = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> retry() => load();

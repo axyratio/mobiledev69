@@ -9,9 +9,12 @@ windows/
 .pub/
 *.iml
 
-# Android platform folder is tracked (AndroidManifest.xml carries the
-# flutter_web_auth_2 CallbackActivity intent-filter other collaborators/CI
-# need) — only its generated/local build artifacts are ignored.
+# Android platform folder is tracked (AndroidManifest.xml, build.gradle.kts
+# etc. are real project config other collaborators/CI need) — only its
+# generated/local build artifacts, and anything holding signing secrets,
+# are ignored. The release keystore itself should live outside this repo
+# entirely (see key.properties.example) — these patterns are a safety net,
+# not the primary defense.
 android/.gradle/
 android/captures/
 android/gradlew
@@ -20,6 +23,8 @@ android/local.properties
 android/key.properties
 android/**/GeneratedPluginRegistrant.java
 android/app/build/
+*.jks
+*.keystore
 
 # iOS/web platform folders are tracked too, for the same reason (custom
 # URL scheme setup, index.html/manifest.json branding).

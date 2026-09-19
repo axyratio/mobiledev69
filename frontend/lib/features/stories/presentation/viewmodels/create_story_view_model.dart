@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/result.dart';
+import '../../../../core/safe_change_notifier.dart';
 import '../../domain/models/story_detail.dart';
 import '../../domain/models/vocab_word.dart';
 import '../../domain/stories_repository.dart';
@@ -25,7 +26,7 @@ const int maxStoryParagraphs = 5;
 /// pick a word count -> review the random words -> call the LLM -> land on
 /// the saved story, with a re-roll (whole set or one word) available on the
 /// review step and a retry available if generation fails.
-class CreateStoryViewModel extends ChangeNotifier {
+class CreateStoryViewModel extends ChangeNotifier with SafeChangeNotifier {
   CreateStoryViewModel(this._repository);
 
   final StoriesRepository _repository;
@@ -123,7 +124,7 @@ class CreateStoryViewModel extends ChangeNotifier {
     }
 
     isSearching = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> confirmCount() async {
@@ -150,7 +151,7 @@ class CreateStoryViewModel extends ChangeNotifier {
     }
 
     isBusy = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> rerollAll() async {
@@ -167,7 +168,7 @@ class CreateStoryViewModel extends ChangeNotifier {
     }
 
     isBusy = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> rerollWordAt(int index) async {
@@ -190,7 +191,7 @@ class CreateStoryViewModel extends ChangeNotifier {
     }
 
     isBusy = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> generate() async {
@@ -211,7 +212,7 @@ class CreateStoryViewModel extends ChangeNotifier {
         step = CreateStoryStep.error;
     }
 
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void backToCount() {

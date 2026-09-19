@@ -11,7 +11,7 @@ class ApiClient {
 
   final Dio dio;
 
-  static Future<ApiClient> create({required PersistCookieJar cookieJar}) async {
+  static Future<ApiClient> create({required CookieJar cookieJar}) async {
     final dio = Dio(
       BaseOptions(
         validateStatus: (status) => status != null && status < 500,

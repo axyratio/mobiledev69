@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -46,15 +47,27 @@ Future<void> _signInOnMobile(BuildContext context) async {
   GoogleSignInAccount? account;
   try {
     account = await googleSignIn.signIn();
-  } catch (_) {
-    // User cancelled or the native sign-in sheet failed — nothing to report.
+  } catch (error) {
+    // User cancelled the native sheet — not an error worth surfacing.
+    if (error is PlatformException && error.code == GoogleSignIn.kSignInCanceledError) {
+      return;
+    }
+    if (!context.mounted) return;
+    _showError(context, 'ลงชื่อเข้าใช้ด้วย Google ไม่สำเร็จ กรุณาลองใหม่');
     return;
   }
-  if (account == null) return;
+  if (account == null) return; // user cancelled the account picker
   if (!context.mounted) return;
 
   final idToken = (await account.authentication).idToken;
-  if (idToken == null) return;
+  if (idToken == null) {
+    if (!context.mounted) return;
+    _showError(
+      context,
+      'ไม่ได้รับข้อมูลยืนยันจาก Google กรุณาลองใหม่ (ถ้ายังไม่ได้ ให้ลองออกจากระบบ Google ในแอปอื่นแล้วลองใหม่)',
+    );
+    return;
+  }
   if (!context.mounted) return;
 
   final result = await repository.loginWithGoogleIdToken(idToken);
@@ -64,8 +77,12 @@ Future<void> _signInOnMobile(BuildContext context) async {
     case Ok():
       await authViewModel.completeLogin();
     case Err(message: final message):
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(message)));
+      _showError(context, message);
   }
+}
+
+void _showError(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
 }

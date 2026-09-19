@@ -61,6 +61,8 @@ class _RootScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = context.watch<AuthViewModel>().status;
+    // TEMP DEBUG — remove once the HomeViewModel disposal race is diagnosed.
+    debugPrint('[_RootScreen] build() status=$status hashCode=$hashCode');
     if (status == AuthStatus.unknown) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }

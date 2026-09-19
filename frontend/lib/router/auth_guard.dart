@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/viewmodels/auth_view_model.dart';
@@ -9,12 +10,18 @@ String? authGuard(AuthViewModel authViewModel, GoRouterState state) {
   final status = authViewModel.status;
   final isAuthRoute = state.matchedLocation == '/login' || state.matchedLocation == '/signup';
 
+  final String? result;
   switch (status) {
     case AuthStatus.unknown:
-      return null; // still checking the session — stay put on the splash route
+      result = null; // still checking the session — stay put on the splash route
     case AuthStatus.unauthenticated:
-      return isAuthRoute ? null : '/login';
+      result = isAuthRoute ? null : '/login';
     case AuthStatus.authenticated:
-      return isAuthRoute ? '/' : null;
+      result = isAuthRoute ? '/' : null;
   }
+  // TEMP DEBUG — remove once the HomeViewModel disposal race is diagnosed.
+  debugPrint(
+    '[authGuard] status=$status matchedLocation=${state.matchedLocation} -> redirect=$result',
+  );
+  return result;
 }
