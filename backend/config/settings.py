@@ -1,4 +1,4 @@
-"""Django settings for the AI Story Generator backend."""
+"""Django settings for the Read English Story backend."""
 import dj_database_url
 
 from config.env import BASE_DIR, env
@@ -118,6 +118,15 @@ ACCOUNT_LOGOUT_REDIRECT_URL = env.FRONTEND_URL
 # is enforced client-side by checking /api/auth/me/.
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# The Flutter web build lives on a different origin than this backend
+# (e.g. read-english-story-web.onrender.com vs read-english-story-backend.onrender.com),
+# so the session cookie is cross-site from the browser's point of view.
+# SameSite=None + Secure is required for a cross-site cookie to be sent at
+# all; kept as Lax/insecure under DEBUG since local dev runs over plain
+# http, where SameSite=None cookies are rejected outright.
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = "None" if not DEBUG else "Lax"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # CORS (Flutter web / mobile client)

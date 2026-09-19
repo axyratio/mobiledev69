@@ -198,7 +198,10 @@ class _StoryFeed extends StatelessWidget {
         for (final story in stories) ...[
           StoryFeedCard(
             story: story,
-            onTap: () => context.push('/stories/${story.id}'),
+            onTap: () async {
+              await context.push('/stories/${story.id}');
+              if (context.mounted) viewModel.load();
+            },
           ),
           const SizedBox(height: 8),
         ],

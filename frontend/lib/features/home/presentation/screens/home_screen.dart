@@ -69,7 +69,7 @@ class _HeaderRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text('AI Story Generator', style: theme.textTheme.titleMedium),
+          child: Text('Read English Story', style: theme.textTheme.titleMedium),
         ),
         _IconSquareButton(
           tooltip: 'Toggle theme',
@@ -372,7 +372,10 @@ class _RecentStoriesSection extends StatelessWidget {
           for (final story in viewModel.recentStories) ...[
             StoryFeedCard(
               story: story,
-              onTap: () => context.push('/stories/${story.id}'),
+              onTap: () async {
+                await context.push('/stories/${story.id}');
+                if (context.mounted) viewModel.load();
+              },
             ),
             const SizedBox(height: 8),
           ],

@@ -30,4 +30,10 @@ abstract class StoriesRepository {
 
   /// The full text of a single owned story (FR-09).
   Future<Result<StoryDetail>> fetchStory(int id);
+
+  /// Renames an owned story (FR-10, FR-12). Returns the updated story.
+  Future<Result<StoryDetail>> renameStory(int id, String title);
+
+  /// Permanently deletes an owned story and its word links (FR-11, NFR-06).
+  Future<Result<void>> deleteStory(int id);
 }

@@ -99,4 +99,21 @@ class StoryDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> retry() => load();
+
+  /// Renames the story (FR-10, FR-12). On success, updates [story] in place
+  /// so the header reflects the new title without a re-fetch.
+  Future<Result<void>> rename(String title) async {
+    final result = await _repository.renameStory(_storyId, title);
+    switch (result) {
+      case Ok(value: final updated):
+        story = updated;
+        notifyListeners();
+        return const Result.ok(null);
+      case Err(message: final message):
+        return Result.err(message);
+    }
+  }
+
+  /// Permanently deletes the story (FR-11, NFR-06).
+  Future<Result<void>> delete() => _repository.deleteStory(_storyId);
 }

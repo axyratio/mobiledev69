@@ -85,7 +85,7 @@ class _AppRouterHostState extends State<_AppRouterHost> {
 
     final themeMode = themeController.mode;
     return MaterialApp.router(
-      title: 'AI Story Generator',
+      title: 'Read English Story',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,

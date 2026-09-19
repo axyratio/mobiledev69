@@ -105,6 +105,39 @@ class StoriesRepositoryImpl implements StoriesRepository {
     }
   }
 
+  @override
+  Future<Result<StoryDetail>> renameStory(int id, String title) async {
+    try {
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+        AppConfig.storyDetailUrl(id),
+        data: {'title': title},
+      );
+      if (_isError(response.statusCode)) {
+        return Result.err(
+          _detailFrom(response, fallback: 'บันทึกชื่อเรื่องไม่สำเร็จ'),
+        );
+      }
+      return Result.ok(StoryDetailDto.fromJson(response.data!).toDomain());
+    } catch (_) {
+      return const Result.err('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่');
+    }
+  }
+
+  @override
+  Future<Result<void>> deleteStory(int id) async {
+    try {
+      final response = await _apiClient.dio.delete<Map<String, dynamic>>(
+        AppConfig.storyDetailUrl(id),
+      );
+      if (_isError(response.statusCode)) {
+        return Result.err(_detailFrom(response, fallback: 'ลบเรื่องไม่สำเร็จ'));
+      }
+      return const Result.ok(null);
+    } catch (_) {
+      return const Result.err('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่');
+    }
+  }
+
   bool _isError(int? statusCode) => statusCode != null && statusCode >= 400;
 
   String _detailFrom(

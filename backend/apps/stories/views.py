@@ -39,6 +39,10 @@ MAX_GENRE_LENGTH = 40
 
 MAX_SEARCH_RESULTS = 20
 
+# Matches the mockup's rename field (FR-10) — shorter than the model's
+# storage limit (200) since it's a UX cap on editing, not on generation.
+MAX_TITLE_LENGTH = 80
+
 
 class StoryListView(generics.ListAPIView):
     """My Stories feed for Home (FR-08 groundwork).
@@ -185,8 +189,31 @@ def generate_story_view(request):
     return Response(StoryDetailSerializer(story).data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH", "DELETE"])
+@authentication_classes([CsrfExemptSessionAuthentication])
 def story_detail_view(request, pk):
-    """Full story view for Detail (FR-09), scoped to the owner (NFR-02, FR-12)."""
+    """Full story view for Detail (FR-09), rename (FR-10) and delete
+    (FR-11), all scoped to the owner (NFR-02, FR-12).
+
+    `on_delete=models.CASCADE` on `StoryWord` takes care of NFR-06 (no
+    orphan word links) when the story itself is deleted.
+    """
     story = get_object_or_404(Story.objects.prefetch_related("words"), pk=pk, owner=request.user)
+
+    if request.method == "DELETE":
+        story.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    if request.method == "PATCH":
+        title = str(request.data.get("title", "")).strip()
+        if not title:
+            return Response({"detail": "กรุณาระบุชื่อเรื่อง"}, status=status.HTTP_400_BAD_REQUEST)
+        if len(title) > MAX_TITLE_LENGTH:
+            return Response(
+                {"detail": f"ชื่อเรื่องต้องไม่เกิน {MAX_TITLE_LENGTH} ตัวอักษร"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        story.title = title
+        story.save(update_fields=["title", "updated_at"])
+
     return Response(StoryDetailSerializer(story).data)
