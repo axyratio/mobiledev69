@@ -15,7 +15,8 @@ db.sqlite3
 .env.production
 staticfiles/
 
-data/*
+data/oxford_3000_5000_merged (1).csv
+data/oxford3000_sample.json
 empty_def_en.json
 examples_by_pos.json
 DEPLOY_CHECKLIST.md
