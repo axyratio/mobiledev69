@@ -102,6 +102,8 @@ class Story(models.Model):
     )
     title = models.CharField(max_length=200)
     body = models.TextField()
+    title_th = models.CharField(max_length=200, blank=True, default="")
+    body_th = models.TextField(blank=True, default="")
     prompt_used = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

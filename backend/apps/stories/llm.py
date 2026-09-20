@@ -39,9 +39,14 @@ SYSTEM_INSTRUCTION = (
     "rare, technical, literary, or advanced vocabulary outside that list; "
     "prefer the simplest common word that fits. Keep the story wholesome "
     "and suitable for all ages: no violence, hate, sexual content, or "
-    "self-harm. Respond with ONLY a JSON object of the exact shape "
-    '{"title": string, "body": string} and nothing else - no markdown '
-    "fences, no commentary."
+    "self-harm. Then translate both the title and the story into natural, "
+    "fluent Thai. The Thai body translation must have exactly the same "
+    "number of paragraphs as the English body, in the same order, each "
+    "separated by a single blank line, so the two versions line up "
+    "paragraph-for-paragraph. Respond with ONLY a JSON object of the exact "
+    'shape {"title": string, "title_th": string, "body": string, '
+    '"body_th": string} and nothing else - no markdown fences, no '
+    "commentary."
 )
 
 _SAFETY_CATEGORIES = (
@@ -83,7 +88,9 @@ def _parse_response(text: str) -> dict:
     body = str(data.get("body", "")).strip()
     if not title or not body:
         raise LLMGenerationError("AI ไม่ได้ส่งชื่อเรื่องหรือเนื้อเรื่องกลับมา")
-    return {"title": title, "body": body}
+    title_th = str(data.get("title_th", "")).strip()
+    body_th = str(data.get("body_th", "")).strip()
+    return {"title": title, "body": body, "title_th": title_th, "body_th": body_th}
 
 
 def _used_words(body: str, words: list[str]) -> list[str]:
@@ -113,8 +120,9 @@ def generate_story(words: list[str], genre: str = "", paragraph_count: int = 1) 
                 # nearly the whole budget goes to the story itself.
                 thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
                 # Generous headroom, scaled with paragraph count since longer
-                # stories need more of it.
-                max_output_tokens=max(2048, 700 * paragraph_count),
+                # stories need more of it. Doubled per-paragraph budget to
+                # also fit the Thai translation of the same body.
+                max_output_tokens=max(2048, 1400 * paragraph_count),
                 safety_settings=[
                     types.SafetySetting(category=category, threshold="BLOCK_MEDIUM_AND_ABOVE")
                     for category in _SAFETY_CATEGORIES

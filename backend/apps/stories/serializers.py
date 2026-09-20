@@ -83,7 +83,16 @@ class StoryDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Story
-        fields = ["id", "title", "body", "words", "extra_words", "created_at"]
+        fields = [
+            "id",
+            "title",
+            "body",
+            "title_th",
+            "body_th",
+            "words",
+            "extra_words",
+            "created_at",
+        ]
 
     def get_words(self, story: Story) -> list[dict]:
         return [_word_payload(word) for word in story.words.all()]

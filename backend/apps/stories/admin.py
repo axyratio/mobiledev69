@@ -27,4 +27,5 @@ class StoryAdmin(admin.ModelAdmin):
     list_display = ("title", "owner", "created_at", "updated_at")
     search_fields = ("title", "owner__email")
     list_filter = ("created_at",)
+    readonly_fields = ("title_th", "body_th")
     inlines = [StoryWordInline]

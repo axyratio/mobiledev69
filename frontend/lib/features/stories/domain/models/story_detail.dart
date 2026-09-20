@@ -9,6 +9,8 @@ class StoryDetail {
     required this.id,
     required this.title,
     required this.body,
+    required this.titleTh,
+    required this.bodyTh,
     required this.words,
     required this.extraWords,
     required this.createdAt,
@@ -17,7 +19,14 @@ class StoryDetail {
   final int id;
   final String title;
   final String body;
+
+  /// Thai translation of [title]/[body], generated together with the
+  /// English version. Empty for stories generated before this existed.
+  final String titleTh;
+  final String bodyTh;
   final List<StoryVocabWord> words;
   final List<StoryVocabWord> extraWords;
   final DateTime createdAt;
+
+  bool get hasThaiTranslation => bodyTh.isNotEmpty;
 }

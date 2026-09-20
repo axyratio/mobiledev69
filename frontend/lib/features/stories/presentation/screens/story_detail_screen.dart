@@ -91,6 +91,7 @@ class _StoryDetailView extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back),
                   ),
                   const Spacer(),
+                  if (viewModel.story != null) _LanguageToggle(viewModel: viewModel),
                   IconButton(
                     onPressed: viewModel.story == null
                         ? null
@@ -315,6 +316,61 @@ class _DeleteStoryDialog extends StatelessWidget {
   }
 }
 
+/// Plain paragraph rendering for the Thai translation — no word highlighting
+/// or tap, since target-word matching only applies to the English body.
+class _PlainStoryBody extends StatelessWidget {
+  const _PlainStoryBody({required this.body});
+
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final baseStyle = (theme.textTheme.bodyLarge ?? const TextStyle()).copyWith(
+      color: theme.colorScheme.onSurface,
+      height: 1.85,
+    );
+    final paragraphs = body.split(RegExp(r'\n+')).where((p) => p.trim().isNotEmpty);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final paragraph in paragraphs)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Text('      $paragraph', style: baseStyle),
+          ),
+      ],
+    );
+  }
+}
+
+/// TH/EN switch (mockup 1h extension): swaps the article body — and which
+/// language the word-definition sheet leads with — between the generated
+/// English story and its Thai translation.
+class _LanguageToggle extends StatelessWidget {
+  const _LanguageToggle({required this.viewModel});
+
+  final StoryDetailViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final story = viewModel.story;
+    final hasThai = story?.hasThaiTranslation ?? false;
+    return SegmentedButton<StoryLanguage>(
+      segments: const [
+        ButtonSegment(value: StoryLanguage.en, label: Text('EN')),
+        ButtonSegment(value: StoryLanguage.th, label: Text('TH')),
+      ],
+      selected: {viewModel.language},
+      showSelectedIcon: false,
+      onSelectionChanged: !hasThai
+          ? null
+          : (_) => viewModel.toggleLanguage(),
+      style: const ButtonStyle(visualDensity: VisualDensity.compact),
+    );
+  }
+}
+
 class _StoryDetailBody extends StatelessWidget {
   const _StoryDetailBody({required this.viewModel});
   final StoryDetailViewModel viewModel;
@@ -351,24 +407,30 @@ class _StoryDetailBody extends StatelessWidget {
       );
     }
 
+    final showThai = viewModel.language == StoryLanguage.th && story.hasThaiTranslation;
+    final displayTitle = showThai && story.titleTh.isNotEmpty ? story.titleTh : story.title;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(story.title, style: theme.textTheme.headlineSmall),
+          Text(displayTitle, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
             '${formatThaiDateTime(story.createdAt)} · ${story.words.length} คำเป้าหมาย',
             style: theme.textTheme.bodySmall,
           ),
           const Divider(height: 32),
-          HighlightedStoryBody(
-            body: story.body,
-            mainWords: viewModel.highlightedWords,
-            extraWords: viewModel.extraHighlightedWords,
-            onWordTap: (word) => _showWordDefinition(context, viewModel, word),
-          ),
+          if (showThai)
+            _PlainStoryBody(body: story.bodyTh)
+          else
+            HighlightedStoryBody(
+              body: story.body,
+              mainWords: viewModel.highlightedWords,
+              extraWords: viewModel.extraHighlightedWords,
+              onWordTap: (word) => _showWordDefinition(context, viewModel, word),
+            ),
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.all(14),
@@ -421,27 +483,43 @@ class _StoryDetailBody extends StatelessWidget {
   }
 }
 
-/// Shows the tapped word's definition (English, Thai, example) in a bottom
-/// sheet. Does nothing if the word can't be found (shouldn't happen — the
-/// tapped text always comes from a word the highlighter itself matched).
+/// Shows the tapped word's definition in a bottom sheet, defaulting to
+/// whichever language the article body is currently shown in. Does nothing
+/// if the word can't be found (shouldn't happen — the tapped text always
+/// comes from a word the highlighter itself matched).
 void _showWordDefinition(BuildContext context, StoryDetailViewModel viewModel, String word) {
   final entry = viewModel.findWord(word);
   if (entry == null) return;
   showModalBottomSheet(
     context: context,
     showDragHandle: true,
-    builder: (context) => _WordDefinitionSheet(word: entry),
+    builder: (context) => _WordDefinitionSheet(word: entry, initialLanguage: viewModel.language),
   );
 }
 
-class _WordDefinitionSheet extends StatelessWidget {
-  const _WordDefinitionSheet({required this.word});
+/// Word-definition popup (extends FR-09): a TH/EN toggle picks which single
+/// definition is shown, instead of always stacking both translations.
+class _WordDefinitionSheet extends StatefulWidget {
+  const _WordDefinitionSheet({required this.word, required this.initialLanguage});
 
   final StoryVocabWord word;
+  final StoryLanguage initialLanguage;
+
+  @override
+  State<_WordDefinitionSheet> createState() => _WordDefinitionSheetState();
+}
+
+class _WordDefinitionSheetState extends State<_WordDefinitionSheet> {
+  late StoryLanguage _language = widget.initialLanguage;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final word = widget.word;
+    final showThai = _language == StoryLanguage.th;
+    final definition = showThai ? word.definitionTh : word.definitionEn;
+    final fallback = showThai ? word.definitionEn : word.definitionTh;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -458,6 +536,18 @@ class _WordDefinitionSheet extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
+                const Spacer(),
+                SegmentedButton<StoryLanguage>(
+                  segments: const [
+                    ButtonSegment(value: StoryLanguage.en, label: Text('EN')),
+                    ButtonSegment(value: StoryLanguage.th, label: Text('TH')),
+                  ],
+                  selected: {_language},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selection) =>
+                      setState(() => _language = selection.first),
+                  style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -469,12 +559,12 @@ class _WordDefinitionSheet extends StatelessWidget {
                 ),
               )
             else ...[
-              if (word.definitionTh.isNotEmpty)
-                Text(word.definitionTh, style: theme.textTheme.bodyLarge),
-              if (word.definitionEn.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(word.definitionEn, style: theme.textTheme.bodyMedium),
-              ],
+              // Falls back to the other language rather than showing
+              // nothing when only one translation was seeded for this word.
+              Text(
+                definition.isNotEmpty ? definition : fallback,
+                style: theme.textTheme.bodyLarge,
+              ),
               if (word.example.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(

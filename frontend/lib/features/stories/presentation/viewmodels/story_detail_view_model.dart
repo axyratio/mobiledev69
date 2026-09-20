@@ -7,6 +7,10 @@ import '../../domain/models/story_detail.dart';
 import '../../domain/models/story_vocab_word.dart';
 import '../../domain/stories_repository.dart';
 
+/// Which language the Detail screen currently displays — the article body
+/// and the word-definition sheet both read off this (FR-09 Thai toggle).
+enum StoryLanguage { en, th }
+
 /// Loads a single story for the Detail screen (FR-09). Accepts an optional
 /// [preloaded] story (the one just returned by `generateStory`) so tapping
 /// straight from the create flow doesn't re-fetch what's already in hand.
@@ -34,6 +38,16 @@ class StoryDetailViewModel extends ChangeNotifier with SafeChangeNotifier {
   bool isLoading = true;
   String? errorMessage;
   StoryDetail? story;
+
+  /// Which language the body (and word definitions) are shown in. Toggled
+  /// from the app bar; defaults to English since highlighting only applies
+  /// to the English body.
+  StoryLanguage language = StoryLanguage.en;
+
+  void toggleLanguage() {
+    language = language == StoryLanguage.en ? StoryLanguage.th : StoryLanguage.en;
+    safeNotifyListeners();
+  }
 
   /// The learner's CEFR level (set in Settings) — only target words at or
   /// above it are highlighted in the body.

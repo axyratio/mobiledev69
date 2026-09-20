@@ -182,6 +182,8 @@ def generate_story_view(request):
         owner=request.user,
         title=result["title"],
         body=result["body"],
+        title_th=result["title_th"],
+        body_th=result["body_th"],
         prompt_used=result["prompt"],
     )
     StoryWord.objects.bulk_create([StoryWord(story=story, word=word) for word in used_words])

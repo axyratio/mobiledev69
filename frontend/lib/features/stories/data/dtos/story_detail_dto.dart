@@ -8,6 +8,8 @@ class StoryDetailDto {
     required this.id,
     required this.title,
     required this.body,
+    required this.titleTh,
+    required this.bodyTh,
     required this.words,
     required this.extraWords,
     required this.createdAt,
@@ -16,6 +18,8 @@ class StoryDetailDto {
   final int id;
   final String title;
   final String body;
+  final String titleTh;
+  final String bodyTh;
   final List<StoryVocabWord> words;
   final List<StoryVocabWord> extraWords;
   final DateTime createdAt;
@@ -25,6 +29,8 @@ class StoryDetailDto {
       id: json['id'] as int,
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
+      titleTh: json['title_th'] as String? ?? '',
+      bodyTh: json['body_th'] as String? ?? '',
       words: _parseWords(json['words']),
       extraWords: _parseWords(json['extra_words']),
       createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
@@ -51,6 +57,8 @@ class StoryDetailDto {
       id: id,
       title: title,
       body: body,
+      titleTh: titleTh,
+      bodyTh: bodyTh,
       words: words,
       extraWords: extraWords,
       createdAt: createdAt,
