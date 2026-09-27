@@ -30,7 +30,7 @@ cd backend
 uv sync
 ```
 
-> ถ้าไม่ใช้ `uv` จะใช้ `pip install -r requirements.txt` แทนก็ได้ (ไฟล์นี้คือชุด dependency เดียวกับที่ใช้ตอน deploy จริงบน Render)
+ถ้าไม่ใช้ `uv` จะใช้ `pip install -r requirements.txt` แทนก็ได้ (ไฟล์นี้คือชุด dependency เดียวกับที่ใช้ตอน deploy จริงบน Render, และตรงกับที่ `pyproject.toml`/`uv.lock` ประกาศไว้แล้ว)
 
 ### 1.2 ตั้งค่า environment variables
 
@@ -45,7 +45,7 @@ DJANGO_SECRET_KEY=insecure-dev-key-change-me   # dev ใช้ค่า default 
 DJANGO_DEBUG=true
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,10.0.2.2
 
-DATABASE_URL=                                   # เว้นว่าง = ใช้ SQLite local
+#DATABASE_URL=                                  # comment ทิ้งไว้ = ใช้ SQLite local (ดูหมายเหตุด้านล่าง)
 
 GOOGLE_OIDC_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
 GOOGLE_OIDC_CLIENT_SECRET=<web-client-secret>
@@ -56,6 +56,12 @@ CORS_ALLOWED_ORIGINS=http://localhost:8080,http://10.0.2.2:8080
 LLM_API_KEY=<gemini-api-key>
 LLM_MODEL=gemini-3.6-flash
 ```
+
+หมายเหตุ: `DATABASE_URL` ต้องถูกลบทิ้งหรือ comment ออกไปเลย ห้ามเหลือเป็น `DATABASE_URL=` (ค่าว่าง)
+`config/env.py` อ่านค่านี้ด้วย `os.environ.get("DATABASE_URL", <sqlite default>)` ซึ่ง fallback
+เป็น SQLite ก็ต่อเมื่อตัวแปรนี้ไม่มีอยู่เลยในสภาพแวดล้อม แต่ `.env` ที่โหลดผ่าน `python-dotenv`
+จะ set ตัวแปรนี้เป็น string ว่างถ้าเขียนเป็น `DATABASE_URL=` ทำให้ `dj_database_url.parse('')`
+พังตอน `migrate` ทันที ให้ comment บรรทัดนี้ด้วย `#` (หรือลบทิ้งไปเลย) ถ้าต้องการใช้ SQLite local
 
 `.env` อยู่ใน `.gitignore` แล้ว ห้าม commit ไฟล์นี้เข้า git
 
@@ -79,11 +85,22 @@ Backend จะรันที่ `http://localhost:8000`
 
 ## 2. Google OAuth setup (ต้องทำก่อน login ได้)
 
-1. ไปที่ [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials) สร้าง **OAuth 2.0 Client ID** ประเภท **Web application**
+1. ไปที่ Google Cloud Console, เมนู Credentials (https://console.cloud.google.com/apis/credentials) สร้าง **OAuth 2.0 Client ID** ประเภท **Web application**
 2. เพิ่ม **Authorized redirect URI**:
    `http://localhost:8000/accounts/google/login/callback/`
 3. เอา Client ID/Secret มาใส่ `GOOGLE_OIDC_CLIENT_ID` / `GOOGLE_OIDC_CLIENT_SECRET` ใน `backend/.env`
-4. ถ้าจะ login จากแอปมือถือ (native Google Sign-In) ต้องเพิ่ม **SHA-1 fingerprint** ของ Android debug/release keystore เข้าไปใน OAuth consent / Android client ที่ผูกกับ Client ID เดียวกันด้วย (ดูวิธีเอา SHA-1 ได้จาก `cd frontend/android && ./gradlew signingReport`)
+4. ถ้าจะ login จากแอปมือถือ (native Google Sign-In) ต้องเพิ่ม **SHA-1 fingerprint** ของ Android debug/release keystore เข้าไปใน OAuth consent / Android client ที่ผูกกับ Client ID เดียวกันด้วย
+
+   ดูวิธีเอา SHA-1: `frontend/android/gradlew` และ `gradlew.bat` เป็นไฟล์ที่ถูก `.gitignore` ไว้
+   (ไม่มีมาให้ตั้งแต่ clone) ต้อง build/run แอป Android ครั้งหนึ่งก่อน เพื่อให้ Flutter สร้าง
+   Gradle wrapper ขึ้นมาให้ ถึงจะรัน `signingReport` ได้:
+
+   ```bash
+   cd frontend
+   flutter build apk --debug        # สร้าง gradlew/gradlew.bat ให้ครั้งแรก (ใช้เวลาสักพัก)
+   cd android
+   ./gradlew signingReport          # Windows cmd.exe ใช้ gradlew.bat signingReport
+   ```
 
 ---
 
@@ -116,10 +133,12 @@ flutter run --dart-define=BACKEND_BASE_URL=http://localhost:8000 --dart-define=G
 
 ### 3.3 อนุญาต HTTP แบบไม่เข้ารหัสตอน dev (local backend เป็น http)
 
-- **Android**: เพิ่ม `android:usesCleartextTraffic="true"` ใน tag `<application>` ของ `android/app/src/main/AndroidManifest.xml`
-- **iOS**: เพิ่ม exception `NSAppTransportSecurity` / `NSAllowsArbitraryLoads` ใน `ios/Runner/Info.plist`
+- **Android**: `android:usesCleartextTraffic="true"` มีอยู่แล้วใน tag `<application>` ของ
+  `android/app/src/main/AndroidManifest.xml` ในโปรเจกต์นี้ ไม่ต้องเพิ่มเอง (เช็คให้แน่ใจว่ายังอยู่หลัง `flutter create` ใหม่หรือ merge จาก template อื่น)
+- **iOS**: ยังไม่มีการตั้งค่านี้ ต้องเพิ่ม exception `NSAppTransportSecurity` /
+  `NSAllowsArbitraryLoads` ใน `ios/Runner/Info.plist` เอง
 
-> ทั้งสองข้อนี้ใช้แค่ตอน dev เท่านั้น ตอน build release ต้องเปลี่ยนไปใช้ HTTPS แล้วเอาออก
+หมายเหตุ: ทั้งสองข้อนี้ใช้แค่ตอน dev เท่านั้น ตอน build release ต้องเปลี่ยนไปใช้ HTTPS แล้วเอาออก
 
 ---
 
@@ -144,9 +163,3 @@ frontend/
     router/       # go_router + auth guard
 ```
 
-
----
-
-## 6. Deploy
-
-โปรเจกต์นี้มี `render.yaml` (Render Blueprint) พร้อม deploy ทั้ง backend (Django + Postgres) และ frontend (Flutter web static build) ดูรายละเอียด env vars ที่ต้องตั้งใน dashboard ได้จาก `backend/.env.production` (เป็น reference sheet เท่านั้น ไม่ได้ถูกโหลดอัตโนมัติ)
