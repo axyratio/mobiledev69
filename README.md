@@ -13,10 +13,97 @@
 
 | เครื่องมือ | เวอร์ชัน |
 |---|---|
-| Python | >= 3.11 |
+| Python | >= 3.11 (`backend/.python-version` = 3.11, `uv` โหลดให้เองถ้าเครื่องไม่มี) |
 | [uv](https://docs.astral.sh/uv/) (ตัวจัดการ dependency ของ backend) | ล่าสุด |
 | Flutter SDK | channel `stable`, Dart `^3.13.2` |
+| JDK | 17 (Gradle/AGP ของโปรเจกต์ต้องใช้ 17 ขึ้นไป) |
+| Android SDK + Emulator | platform 36, build-tools 36.0.0 (ดูหัวข้อ "Toolchain" ด้านล่าง) |
 | Gemini API key (ฟรีที่ https://aistudio.google.com/apikey) | - |
+
+---
+
+## Toolchain ที่ใช้พัฒนา (เวอร์ชันที่ทดสอบจริง)
+
+เครื่องพัฒนา: Windows 10 Home 22H2 (ไม่ใช้ Docker — รัน backend และ Flutter ตรงบนเครื่อง)
+
+| ส่วน | เวอร์ชัน / ตำแหน่ง |
+|---|---|
+| Flutter | 3.47.2 (stable) ติดตั้งที่ `C:\src\flutter` |
+| Dart | 3.13.2 (มากับ Flutter) |
+| Flutter engine | revision `a804b26164` (มากับ Flutter ไม่ต้องติดตั้งแยก) |
+| DevTools | 2.60.0 |
+| JDK | 17 (Microsoft OpenJDK 17.0.20 / Oracle JDK 17.0.19) |
+| Gradle | 9.3.1 (ผ่าน `gradle-wrapper.properties` ไม่ต้องติดตั้งเอง) |
+| Android Gradle Plugin | 9.1.0 (`android/settings.gradle.kts`) |
+| Kotlin | 2.4.0 (`android/settings.gradle.kts`) |
+| Android SDK | `D:\Android` — platforms 30/34/35/36, build-tools 29.0.2/34.0.0/36.0.0, NDK 28.2.13676358, cmake, cmdline-tools `latest` |
+| adb | 37.0.0 (`D:\Android\platform-tools`) |
+| Android Emulator | 36.6.11.0, AVD `my_avd` (Pixel, Android 14 / API 34, Google APIs, x86_64) |
+| uv | 0.11.x |
+| Git | 2.55 |
+| Browser (Flutter web) | Chrome / Edge |
+
+`flutter doctor` ผ่านทุกหมวดที่โปรเจกต์ใช้ (Flutter, Android toolchain, Chrome) หมวด **Visual Studio / Windows desktop ไม่ได้ใช้** ถึงจะขึ้น `[!]` ก็ไม่กระทบ
+
+### ติดตั้งบนเครื่องใหม่ (Windows, PowerShell)
+
+```powershell
+winget install Git.Git
+winget install astral-sh.uv
+winget install Microsoft.OpenJDK.17
+winget install Google.AndroidStudio        # ใช้ SDK Manager / Device Manager ในนี้ก็ได้ หรือใช้ cmdline-tools ด้านล่าง
+
+git clone https://github.com/flutter/flutter.git -b stable C:\src\flutter
+# เพิ่ม C:\src\flutter\bin เข้า PATH แล้วเปิด terminal ใหม่
+flutter --version
+```
+
+Android SDK ผ่าน command line (ต้องมี `cmdline-tools\latest` อยู่ใน `ANDROID_HOME` แล้ว):
+
+```powershell
+sdkmanager --licenses
+sdkmanager "platform-tools" "emulator" "platforms;android-36" "build-tools;36.0.0" "system-images;android-34;google_apis;x86_64"
+
+flutter config --android-sdk D:\Android
+flutter config --jdk-dir "C:\Program Files\Microsoft\jdk-17.0.20.101-hotspot"   # ปรับ path ตามที่ติดตั้ง
+flutter doctor --android-licenses
+flutter doctor -v
+```
+
+Environment variables ที่ตั้งไว้ (ตั้งเป็น User variable แล้วเปิด terminal ใหม่):
+
+| ตัวแปร | ค่า | หมายเหตุ |
+|---|---|---|
+| `ANDROID_HOME` | `D:\Android` | ที่อยู่ Android SDK |
+| `GRADLE_USER_HOME` | `D:\GradleUserHome` | เก็บ Gradle cache ไว้ใน D: |
+| `JAVA_HOME` | path ของ JDK 17 | |
+
+### สร้างและใช้ Android Emulator ผ่าน CLI
+
+```powershell
+# สร้าง AVD (ครั้งเดียว)
+avdmanager create avd -n my_avd -k "system-images;android-34;google_apis;x86_64" -d pixel
+
+emulator -list-avds                 # ดูรายชื่อ AVD
+emulator -avd my_avd                # เปิด emulator (หรือ: flutter emulators --launch my_avd)
+adb devices                         # ต้องเห็น emulator-5554
+flutter devices                     # ต้องเห็นเป็น device ที่รันได้
+```
+
+Emulator ต้องเปิด hardware acceleration ของ CPU (Intel VT-x / AMD-V ใน BIOS) ถ้าไม่เปิดจะบูตช้ามากหรือไม่ขึ้น
+
+### Build
+
+```powershell
+cd frontend
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --debug --dart-define=BACKEND_BASE_URL=http://10.0.2.2:8000 --dart-define=OIDC_CLIENT_ID=<client-id>
+flutter build web --release --dart-define=BACKEND_BASE_URL=http://localhost:8000 --dart-define=OIDC_CLIENT_ID=<client-id>
+```
+
+ถ้าเจอปัญหา build/emulator ดู "Troubleshooting" ท้ายไฟล์
 
 ---
 
@@ -149,4 +236,19 @@ frontend/
       settings/
     router/       # go_router + auth guard
 ```
+
+---
+
+## 5. Troubleshooting
+
+| อาการ | สาเหตุ / วิธีแก้ |
+|---|---|
+| `flutter doctor` เตือน `Multiple adb binaries found` | มี Android SDK 2 ที่ (`D:\Android` และ `C:\Users\<user>\AppData\Local\Android\Sdk`) ตั้ง `ANDROID_HOME` กับ `ANDROID_SDK_ROOT` ชี้คนละที่ ให้ลบ `ANDROID_SDK_ROOT` ทิ้ง (deprecated) แล้วใช้ `ANDROID_HOME` ตัวเดียว หรือตั้งสองตัวให้ชี้ที่เดียวกัน แล้วเปิด terminal ใหม่ |
+| `adb devices` ไม่เห็น emulator หรือเห็นซ้ำ | รัน `adb kill-server && adb start-server` และเช็กว่าใช้ adb ตัวเดียวกับ Flutter (`where adb`) |
+| Build Android พังด้วย `this and base files have different roots` | โปรเจกต์อยู่ D: แต่ pub cache อยู่ C: ใน `android/gradle.properties` ปิด `kotlin.incremental` ไว้แล้ว ถ้ายังเป็นอยู่ให้ตั้ง `PUB_CACHE` ไปไว้ใน D: |
+| Gradle ฟ้อง JDK version | ต้องใช้ JDK 17 เช็กด้วย `flutter doctor -v` (บรรทัด `Java binary at`) แล้วสลับด้วย `flutter config --jdk-dir "<path>"` |
+| แอปบน emulator ต่อ backend ไม่ได้ | ใช้ `http://10.0.2.2:8000` (ไม่ใช่ `localhost`) และ `DJANGO_ALLOWED_HOSTS` ต้องมี `10.0.2.2` |
+| `migrate` พังทันที | `DATABASE_URL=` ใน `.env` เป็นค่าว่าง ให้ comment ทิ้ง (ดูหมายเหตุข้อ 1.2) |
+| Login OIDC แล้วเด้งกลับแอปไม่ได้ | Redirect URI ใน admin ต้องตรงกับ `AppConfig.oidcRedirectUri` และ `appAuthRedirectScheme` (ดูข้อ 2) |
+| `flutter doctor` ขึ้น `[!] Visual Studio` | ไม่กระทบ โปรเจกต์นี้ใช้ Android / Web ไม่ได้ build Windows desktop จึงไม่ต้องติดตั้ง Visual Studio |
 
