@@ -66,5 +66,17 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- flutter_appauth (FR-01): the scheme half of AppConfig.oidcRedirectUri
+	     ("com.example.frontend:/oauth2redirect") -- lets iOS hand control
+	     back to this app once the system browser finishes the OIDC login. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.example.frontend</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

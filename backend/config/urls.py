@@ -3,9 +3,7 @@ from django.urls import include, path
 
 from apps.accounts.views import (
     current_user_view,
-    google_token_login_view,
-    login_view,
-    register_view,
+    oidc_signup_view,
     update_cefr_level_filter_view,
     update_cefr_level_view,
     update_highlight_level_filter_view,
@@ -14,13 +12,20 @@ from apps.accounts.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # OIDC login/logout endpoints, e.g. /accounts/google/login/ and /accounts/logout/
-    # — used by the web build's full-page redirect flow only.
-    path("accounts/", include("allauth.urls")),
+    # Django's own login/logout/password pages, e.g. /accounts/login/ — this
+    # is where django-oidc-provider's /openid/authorize/ redirects a browser
+    # that has no session yet (see LOGIN_URL), same role the old allauth
+    # redirect flow played. oidc_signup_view fills the one gap it doesn't
+    # cover: creating a brand new account from that same browser page.
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("accounts/signup/", oidc_signup_view, name="oidc-signup"),
+    # This backend's own OpenID Connect Provider endpoints (FR-01/FR-02),
+    # e.g. /openid/authorize/, /openid/token/, /openid/userinfo/,
+    # /openid/.well-known/openid-configuration/ — replaces the previous
+    # allauth + Google OIDC integration. The Flutter client authenticates
+    # against these via the standard Authorization Code + PKCE flow.
+    path("openid/", include("oidc_provider.urls", namespace="oidc_provider")),
     path("api/auth/me/", current_user_view, name="current-user"),
-    path("api/auth/register/", register_view, name="register"),
-    path("api/auth/login/", login_view, name="login"),
-    path("api/auth/google/token/", google_token_login_view, name="google-token-login"),
     path("api/auth/theme/", update_theme_preference_view, name="update-theme-preference"),
     path("api/auth/cefr-level/", update_cefr_level_view, name="update-cefr-level"),
     path(

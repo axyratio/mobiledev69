@@ -2,21 +2,25 @@ import 'package:dio/dio.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/auth/session_store.dart';
+import '../../../core/auth/token_store.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/result.dart';
 import '../domain/auth_repository.dart';
 import '../domain/models/session_user.dart';
 import 'dtos/session_user_dto.dart';
 
-/// Talks to the Django session-cookie API through [ApiClient] and maps its
-/// JSON responses to domain models, converting every failure into a
-/// [Result.err] instead of letting a [DioException] escape to the
-/// ViewModel layer.
+/// Talks to the Django API through [ApiClient] and maps its JSON responses
+/// to domain models, converting every failure into a [Result.err] instead
+/// of letting a [DioException] escape to the ViewModel layer. Every request
+/// is authenticated either by [SessionStore]'s cookie (web) or a Bearer
+/// token from [TokenStore] ([ApiClient]'s interceptor attaches it) —
+/// transparent to every method below either way.
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._apiClient, this._sessionStore);
+  AuthRepositoryImpl(this._apiClient, this._sessionStore, this._tokenStore);
 
   final ApiClient _apiClient;
   final SessionStore _sessionStore;
+  final TokenStore _tokenStore;
 
   @override
   Future<Result<SessionUser?>> fetchCurrentUser() async {
@@ -28,31 +32,6 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (_) {
       return const Result.ok(null);
     }
-  }
-
-  @override
-  Future<Result<SessionUser>> login({required String email, required String password}) {
-    return _postForUser(AppConfig.loginUrl, {'email': email, 'password': password});
-  }
-
-  @override
-  Future<Result<SessionUser>> register({
-    required String firstName,
-    required String lastName,
-    required String email,
-    required String password,
-  }) {
-    return _postForUser(AppConfig.registerUrl, {
-      'first_name': firstName,
-      'last_name': lastName,
-      'email': email,
-      'password': password,
-    });
-  }
-
-  @override
-  Future<Result<SessionUser>> loginWithGoogleIdToken(String idToken) {
-    return _postForUser(AppConfig.googleTokenLoginUrl, {'id_token': idToken});
   }
 
   Future<Result<SessionUser>> _postForUser(String url, Map<String, dynamic> data) async {
@@ -102,6 +81,12 @@ class AuthRepositoryImpl implements AuthRepository {
         options: Options(followRedirects: false, validateStatus: (status) => true),
       );
       await _sessionStore.clear();
+      // Mobile's OIDC access/refresh tokens have no server-side revocation
+      // endpoint to call here (django-oidc-provider doesn't implement RFC
+      // 7009) — dropping them locally is enough: ApiClient's interceptor
+      // stops attaching a Bearer header, so every later request goes back
+      // to being anonymous, same effect as clearing the session cookie.
+      await _tokenStore.clear();
       return const Result.ok(null);
     } catch (_) {
       return const Result.err('Could not log out. Please try again.');

@@ -12,31 +12,32 @@ class AppConfig {
     defaultValue: 'http://localhost:8000',
   );
 
-  /// The same Google OAuth **web** client ID the backend uses (allauth's
-  /// `GOOGLE_OIDC_CLIENT_ID`). Passed to `GoogleSignIn` as
-  /// `serverClientId` so the ID token it returns on mobile has this as its
-  /// audience — letting the backend verify it with the client it already
-  /// has, without a separate mobile-specific secret. Get it from Google
-  /// Cloud Console → Credentials (the existing "Web client" entry), then
-  /// pass at build/run time:
-  ///   flutter run --dart-define=GOOGLE_WEB_CLIENT_ID=xxxx.apps.googleusercontent.com
-  static const String googleWebClientId = String.fromEnvironment(
-    'GOOGLE_WEB_CLIENT_ID',
-  );
+  /// The `client_id` of the OIDC `Client` registered for this app in the
+  /// backend's own `/admin/` (django-oidc-provider) — public client, PKCE,
+  /// `redirect_uris` set to [oidcRedirectUri]. Pass at build/run time:
+  ///   flutter run --dart-define=OIDC_CLIENT_ID=xxxxxx
+  static const String oidcClientId = String.fromEnvironment('OIDC_CLIENT_ID');
 
-  /// Full-page redirect target for the web login flow (FR-01) — the
-  /// browser tab navigates here directly since it's already a real
-  /// browser session; Google shows its normal account picker because
-  /// it's the browser's own session, not an embedded web view.
-  static String get googleLoginUrl => '$backendBaseUrl/accounts/google/login/';
+  /// The custom URL scheme the OS hands back to this app once the system
+  /// browser finishes the OIDC redirect (FR-01) — must exactly match one of
+  /// the Client's registered `redirect_uris`, and the scheme half must match
+  /// `appAuthRedirectScheme` in `android/app/build.gradle.kts` /
+  /// `CFBundleURLSchemes` in `ios/Runner/Info.plist`.
+  static const String oidcRedirectUri = 'com.example.frontend:/oauth2redirect';
 
-  /// Trades a Google ID token (from the mobile app's native Sign-In SDK)
-  /// for a session cookie (FR-01).
-  static String get googleTokenLoginUrl => '$backendBaseUrl/api/auth/google/token/';
+  /// This backend's own OIDC issuer (see `/openid/.well-known/openid-configuration/`),
+  /// used by `flutter_appauth` to discover the authorize/token endpoints.
+  static String get oidcIssuer => '$backendBaseUrl/openid';
+
+  /// Full-page redirect target for the web login flow (FR-01) — the browser
+  /// tab navigates straight to this backend's own login page (not through
+  /// `/openid/authorize/`, since the browser tab already gets a normal
+  /// session cookie from logging in there directly) and comes back to
+  /// [AppConfig.backendBaseUrl]'s configured `FRONTEND_URL` once done.
+  static String get oidcLoginUrl => '$backendBaseUrl/accounts/login/';
+
   static String get logoutUrl => '$backendBaseUrl/accounts/logout/';
   static String get currentUserUrl => '$backendBaseUrl/api/auth/me/';
-  static String get registerUrl => '$backendBaseUrl/api/auth/register/';
-  static String get loginUrl => '$backendBaseUrl/api/auth/login/';
   static String get updateThemePreferenceUrl => '$backendBaseUrl/api/auth/theme/';
   static String get updateCefrLevelUrl => '$backendBaseUrl/api/auth/cefr-level/';
   static String get updateCefrLevelFilterUrl =>

@@ -1,22 +1,16 @@
 import json
 
 from django.conf import settings
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import get_user_model
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from google.auth.transport import requests as google_auth_requests
-from google.oauth2 import id_token as google_id_token
 
 User = get_user_model()
-
-# A fresh Request per call would work too, but this reuses one urllib3
-# connection pool across verifications instead of opening a new one every
-# time (verify_oauth2_token uses it to fetch Google's public signing keys).
-_google_auth_request = google_auth_requests.Request()
 
 
 def _user_payload(user):
@@ -32,123 +26,61 @@ def _user_payload(user):
     }
 
 
-@csrf_exempt
-@require_POST
-def register_view(request):
-    """Creates a new account with email + password (FR-01 email/password path).
+def oidc_signup_view(request):
+    """Browser-based sign-up page for the OIDC login flow (FR-01).
 
-    Exempt from CSRF like the OIDC endpoints: the Flutter client is a native
-    app, not a browser, so it has no CSRF cookie/token to send.
+    This is now the *only* way to create an account — the Flutter client no
+    longer has its own email/password form, since every login/signup goes
+    through this backend's own OIDC provider (see /openid/). Django's own
+    LoginView (see /accounts/login/) has no matching sign-up counterpart, so
+    this fills that gap directly: most real IdP hosted-login pages (Auth0,
+    Okta, even Google's own) offer account creation right alongside login
+    for the same reason.
     """
-    try:
-        data = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
+    next_url = request.GET.get("next") or request.POST.get("next") or ""
+    form_values = {"username": "", "first_name": "", "last_name": "", "email": ""}
+    error = None
 
-    first_name = (data.get("first_name") or "").strip()
-    last_name = (data.get("last_name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
+    if request.method == "POST":
+        username = (request.POST.get("username") or "").strip()
+        first_name = (request.POST.get("first_name") or "").strip()
+        last_name = (request.POST.get("last_name") or "").strip()
+        email = (request.POST.get("email") or "").strip().lower()
+        password = request.POST.get("password") or ""
+        form_values = {
+            "username": username,
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+        }
 
-    if not first_name or not email or not password:
-        return JsonResponse(
-            {"detail": "First name, email and password are required."}, status=400
-        )
-    if User.objects.filter(email__iexact=email).exists():
-        return JsonResponse({"detail": "An account with this email already exists."}, status=400)
+        if not username or not first_name or not email or not password:
+            error = "Username, first name, email and password are required."
+        elif User.objects.filter(username__iexact=username).exists():
+            error = "That username is already taken."
+        elif User.objects.filter(email__iexact=email).exists():
+            error = "An account with this email already exists."
+        else:
+            try:
+                validate_password(password)
+            except ValidationError as exc:
+                error = " ".join(exc.messages)
 
-    try:
-        validate_password(password)
-    except ValidationError as exc:
-        return JsonResponse({"detail": " ".join(exc.messages)}, status=400)
+        if error is None:
+            user = User(
+                username=username, email=email, first_name=first_name, last_name=last_name
+            )
+            user.set_password(password)
+            user.save()
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            auth_login(request, user)
+            return redirect(next_url or settings.LOGIN_REDIRECT_URL)
 
-    user = User(username=email, email=email, first_name=first_name, last_name=last_name)
-    user.set_password(password)
-    user.save()
-
-    # Multiple AUTHENTICATION_BACKENDS are configured (ModelBackend +
-    # allauth's), so login() needs to be told which one to trust since this
-    # user wasn't produced by authenticate().
-    user.backend = "django.contrib.auth.backends.ModelBackend"
-    auth_login(request, user)
-    return JsonResponse(_user_payload(user), status=201)
-
-
-@csrf_exempt
-@require_POST
-def login_view(request):
-    """Authenticates via email + password and establishes a session cookie."""
-    try:
-        data = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
-
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    try:
-        user_obj = User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
-        return JsonResponse({"detail": "Invalid email or password."}, status=401)
-
-    user = authenticate(request, username=user_obj.username, password=password)
-    if user is None:
-        return JsonResponse({"detail": "Invalid email or password."}, status=401)
-
-    auth_login(request, user)
-    return JsonResponse(_user_payload(user))
-
-
-@csrf_exempt
-@require_POST
-def google_token_login_view(request):
-    """Verifies a Google ID token from the native Sign-In SDK and
-    establishes a session (FR-01).
-
-    Used by the mobile app instead of the browser-redirect OIDC flow:
-    `google_sign_in` on the device handles the account picker natively
-    (Google Play Services / native iOS SDK), sharing whatever Google
-    account is already signed in there, and hands back an ID token whose
-    audience is this same `GOOGLE_OIDC_CLIENT_ID` (the app passes it as
-    `serverClientId`) — so it verifies with the same web client allauth
-    already uses, no separate mobile secret needed on this side.
-    """
-    try:
-        data = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"detail": "Invalid JSON body."}, status=400)
-
-    token = data.get("id_token") or ""
-    try:
-        payload = google_id_token.verify_oauth2_token(
-            token, _google_auth_request, audience=settings.GOOGLE_OIDC_CLIENT_ID
-        )
-    except ValueError:
-        return JsonResponse({"detail": "Invalid Google ID token."}, status=400)
-
-    sub = payload.get("sub") or ""
-    email = (payload.get("email") or "").strip().lower()
-    if not sub or not email:
-        return JsonResponse({"detail": "Google account has no usable email."}, status=400)
-
-    try:
-        user = User.objects.get(oidc_provider="google", oidc_sub=sub)
-    except User.DoesNotExist:
-        # Fall back to an existing email/password (or web-OIDC) account so
-        # the same person doesn't end up with two disconnected users.
-        user = User.objects.filter(email__iexact=email).first()
-        if user is None:
-            user = User(username=email, email=email)
-            user.set_unusable_password()
-        user.oidc_provider = "google"
-        user.oidc_sub = sub
-        user.first_name = user.first_name or payload.get("given_name") or ""
-        user.last_name = user.last_name or payload.get("family_name") or ""
-        user.save()
-
-    user.backend = "django.contrib.auth.backends.ModelBackend"
-    auth_login(request, user)
-    return JsonResponse(_user_payload(user))
+    return render(
+        request,
+        "registration/signup.html",
+        {"error": error, "next": next_url, "form_values": form_values},
+    )
 
 
 @csrf_exempt

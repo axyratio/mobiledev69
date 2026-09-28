@@ -41,18 +41,28 @@ Since the backend runs on plain HTTP in local dev, allow cleartext traffic:
 - **iOS**: in `ios/Runner/Info.plist`, add an `NSAppTransportSecurity` /
   `NSAllowsArbitraryLoads` exception for local dev (same caveat).
 
-## 4. How login works (Day 1)
+## 4. How login works
 
-1. `LoginScreen` opens an embedded web view at
-   `{backend}/accounts/google/login/`.
-2. The user completes Google's OIDC consent screen; Django's session cookie
-   is set and the browser is redirected to `{backend}/api/auth/me/`.
-3. The web view detects that redirect, reads the session cookie via
-   `CookieManager`, and hands it to `AuthService`, which stores it in a
-   `PersistCookieJar` so it survives app restarts.
-4. `AuthState.completeLogin()` re-checks `/api/auth/me/` (now authenticated)
-   and the app shows `HomeScreen`.
-5. Logging out calls `/accounts/logout/` then clears the local cookie jar.
+Two paths, both handled from `LoginScreen`/`SignupScreen`:
+
+- **Email/password**: posts straight to `/api/auth/register/` or
+  `/api/auth/login/`, which sets a session cookie.
+- **"Continue via OIDC"** (`core/auth/oidc_auth.dart`) — the backend is its
+  own OpenID Connect Provider (`django-oidc-provider`, see `/openid/` on the
+  backend), not a third-party like Google:
+  - **Mobile**: opens the system browser via `flutter_appauth` for the
+    standard Authorization Code + PKCE flow against `/openid/authorize/`,
+    then exchanges the code for tokens itself. The resulting
+    access/refresh tokens are stored in `TokenStore` (secure storage) and
+    attached as a `Bearer` header by `ApiClient`'s interceptor on every
+    later request — refreshed automatically on a 401.
+  - **Web**: a plain full-page redirect straight to the backend's
+    `/accounts/login/` page (a real browser tab, so a normal session
+    cookie works fine — no token dance needed there).
+
+Either way, `AuthViewModel.completeLogin()` re-checks `/api/auth/me/` (now
+authenticated) and the app shows `HomeScreen`. Logging out calls
+`/accounts/logout/`, clears the cookie jar, and clears `TokenStore`.
 
 ## 5. Project layout
 

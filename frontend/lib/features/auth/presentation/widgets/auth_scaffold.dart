@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/theme_controller.dart';
 
-/// Shared visual shell for the login/sign-up screens, restyled to the
-/// Nocturne design reference: a flat surface (no gradient header), a theme
-/// toggle available even while signed out (per the design's guest-state
-/// copy: "สลับโหมดมืดได้แม้ยังไม่ล็อกอิน"), and a centered form card.
+/// Visual shell for [LoginScreen], restyled to the Nocturne design
+/// reference: a flat surface (no gradient header), a theme toggle available
+/// even while signed out (per the design's guest-state copy:
+/// "สลับโหมดมืดได้แม้ยังไม่ล็อกอิน"), and a centered card.
 class AuthScaffold extends StatelessWidget {
   const AuthScaffold({
     super.key,
@@ -79,85 +79,6 @@ class AuthScaffold extends StatelessWidget {
               child,
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// "Sign up with" / "Sign in with" divider + the Google button, and the
-/// switch-mode link at the bottom. Shared between login and sign-up.
-class AuthFooter extends StatelessWidget {
-  const AuthFooter({
-    super.key,
-    required this.dividerLabel,
-    required this.onGooglePressed,
-    required this.promptText,
-    required this.actionText,
-    required this.onActionPressed,
-  });
-
-  final String dividerLabel;
-  final VoidCallback onGooglePressed;
-  final String promptText;
-  final String actionText;
-  final VoidCallback onActionPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(dividerLabel, style: theme.textTheme.bodySmall),
-            ),
-            const Expanded(child: Divider()),
-          ],
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: onGooglePressed,
-          icon: const _GoogleBadge(),
-          label: const Text('Continue with Google'),
-        ),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(promptText, style: theme.textTheme.bodyMedium),
-            TextButton(onPressed: onActionPressed, child: Text(actionText)),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _GoogleBadge extends StatelessWidget {
-  const _GoogleBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 20,
-      height: 20,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-      child: const Text(
-        'G',
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF4285F4),
-          height: 1,
         ),
       ),
     );

@@ -1,133 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../../../../core/auth/google_oauth.dart';
-import '../../domain/auth_repository.dart';
-import '../viewmodels/auth_view_model.dart';
-import '../viewmodels/login_view_model.dart';
+import '../../../../core/auth/oidc_auth.dart';
 import '../widgets/auth_scaffold.dart';
 
-/// Email/password sign-in, plus a "Continue with Google" option that runs
-/// the OIDC flow in the system browser (FR-01).
+/// Sole entry point into the app (FR-01) — every login and sign-up now goes
+/// through this backend's own OIDC Authorization Code + PKCE flow in the
+/// system browser, which has its own linked login/sign-up pages. There is
+/// no in-app email/password form anymore: keeping one here alongside OIDC
+/// would just be two ways to do the same thing against the same user
+/// database.
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => LoginViewModel(
-        repository: context.read<AuthRepository>(),
-        authViewModel: context.read<AuthViewModel>(),
-      ),
-      child: const _LoginView(),
-    );
-  }
-}
-
-class _LoginView extends StatefulWidget {
-  const _LoginView();
-
-  @override
-  State<_LoginView> createState() => _LoginViewState();
-}
-
-class _LoginViewState extends State<_LoginView> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  bool _obscurePassword = true;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    await context.read<LoginViewModel>().submit(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
-    // On success the router's auth guard (listening to AuthViewModel)
-    // redirects to Home automatically; on failure the ViewModel's
-    // errorMessage is already shown below.
-  }
-
-  void _continueWithGoogle() => signInWithGoogle(context);
-
-  @override
-  Widget build(BuildContext context) {
-    final viewModel = context.watch<LoginViewModel>();
+    final theme = Theme.of(context);
 
     return AuthScaffold(
       title: 'Welcome back',
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (viewModel.errorMessage != null) ...[
-              Text(
-                viewModel.errorMessage!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: (value) => (value == null || !value.contains('@'))
-                  ? 'Enter a valid email'
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              autofillHints: const [AutofillHints.password],
-              decoration: InputDecoration(
-                labelText: 'Password',
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                ),
-              ),
-              validator: (value) => (value == null || value.isEmpty)
-                  ? 'Enter your password'
-                  : null,
-              onFieldSubmitted: (_) => _submit(),
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton(
-              onPressed: viewModel.isSubmitting ? null : _submit,
-              child: viewModel.isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Sign in'),
-            ),
-            const SizedBox(height: 8),
-            AuthFooter(
-              dividerLabel: 'Sign in with',
-              onGooglePressed: _continueWithGoogle,
-              promptText: "Don't have an account?",
-              actionText: 'Sign up',
-              onActionPressed: () => context.go('/signup'),
-            ),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Sign in or create an account — the next screen handles both.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () => signInWithOidc(context),
+            icon: const Icon(Icons.shield_outlined, size: 20),
+            label: const Text('Continue'),
+          ),
+        ],
       ),
     );
   }

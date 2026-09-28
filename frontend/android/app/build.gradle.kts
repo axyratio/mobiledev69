@@ -41,6 +41,12 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // flutter_appauth (FR-01): the scheme half of AppConfig.oidcRedirectUri
+        // ("com.example.frontend:/oauth2redirect") — AppAuth registers an
+        // intent-filter for it at build time via this placeholder so the
+        // system browser can hand control back to this app after login.
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.example.frontend"
     }
 
     signingConfigs {

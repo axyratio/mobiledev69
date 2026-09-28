@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Authorize — Read English Story</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F3F5FE;
+            --surface: #FBFCFF;
+            --text: #292B31;
+            --muted: #595D6C;
+            --accent: #796CBF;
+            --accent-strong: #5D5294;
+            --accent-container: #E7E5FE;
+            --divider: rgba(41, 43, 49, .14);
+            --radius-md: 8px;
+            --radius-lg: 14px;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #161826;
+                --surface: #232532;
+                --text: #E9E9ED;
+                --muted: #9397AB;
+                --accent: #9184D9;
+                --accent-strong: #B5ABFC;
+                --accent-container: #2B2741;
+                --divider: rgba(233, 233, 237, .16);
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: var(--bg); color: var(--text); padding: 24px 16px;
+            font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+        }
+        .card {
+            width: 100%; max-width: 360px; background: var(--surface);
+            border: 1px solid var(--divider); border-radius: var(--radius-lg);
+            padding: 28px 24px;
+        }
+        .kicker { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
+        .kicker .bar { width: 4px; height: 18px; background: var(--accent); border-radius: 2px; }
+        .kicker span { font-size: 12px; letter-spacing: 1.2px; color: var(--muted); text-transform: uppercase; }
+        h1 { font-size: 20px; font-weight: 600; text-align: center; margin: 0 0 8px; }
+        .subtitle { font-size: 14px; color: var(--muted); text-align: center; margin: 0 0 20px; }
+        .subtitle strong { color: var(--text); }
+        ul.scopes { list-style: none; padding: 0; margin: 0 0 24px; }
+        ul.scopes li {
+            padding: 10px 0; border-bottom: 1px solid var(--divider); font-size: 14px;
+        }
+        ul.scopes li:last-child { border-bottom: none; }
+        ul.scopes li strong { display: block; margin-bottom: 2px; }
+        ul.scopes li span { color: var(--muted); font-size: 13px; }
+        button {
+            width: 100%; padding: 13px; font-size: 15px; font-weight: 500; font-family: inherit;
+            border-radius: var(--radius-md); cursor: pointer; border: none;
+        }
+        button.primary { background: var(--accent); color: #fff; margin-bottom: 10px; }
+        button.primary:active { background: var(--accent-strong); }
+        button.secondary { background: transparent; color: var(--muted); }
+        button.secondary:active { background: var(--accent-container); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="kicker"><div class="bar"></div><span>Oxford 3000</span></div>
+        <h1>Allow access?</h1>
+        <p class="subtitle"><strong>{{ client.name }}</strong> wants to sign you in</p>
+
+        <form method="post" action="{% url 'oidc_provider:authorize' %}">
+            {% csrf_token %}
+            {{ hidden_inputs }}
+
+            <ul class="scopes">
+                {% for scope in scopes %}
+                <li><strong>{{ scope.name }}</strong><span>{{ scope.description }}</span></li>
+                {% endfor %}
+            </ul>
+
+            <button type="submit" name="allow" value="Authorize" class="primary">Authorize</button>
+            <button type="submit" class="secondary">Decline</button>
+        </form>
+    </div>
+</body>
+</html>

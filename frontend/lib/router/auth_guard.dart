@@ -8,7 +8,7 @@ import '../features/auth/presentation/viewmodels/auth_view_model.dart';
 /// is no valid session, and vice versa).
 String? authGuard(AuthViewModel authViewModel, GoRouterState state) {
   final status = authViewModel.status;
-  final isAuthRoute = state.matchedLocation == '/login' || state.matchedLocation == '/signup';
+  final isAuthRoute = state.matchedLocation == '/login';
 
   final String? result;
   switch (status) {

@@ -38,9 +38,6 @@ class Env:
 
     DATABASE_URL: str = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 
-    GOOGLE_OIDC_CLIENT_ID: str = os.environ.get("GOOGLE_OIDC_CLIENT_ID", "")
-    GOOGLE_OIDC_CLIENT_SECRET: str = os.environ.get("GOOGLE_OIDC_CLIENT_SECRET", "")
-
     FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "http://localhost:8080")
     CORS_ALLOWED_ORIGINS: list[str] = _read_list(
         "CORS_ALLOWED_ORIGINS", "http://localhost:8080"

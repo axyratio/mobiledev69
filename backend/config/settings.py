@@ -14,12 +14,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django.contrib.sites",
-    # OIDC / social login
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
+    # OIDC: this backend is itself the OpenID Connect Provider (see /openid/)
+    "oidc_provider",
     # API
     "rest_framework",
     "corsheaders",
@@ -35,9 +31,11 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Resolves request.user from an OIDC Bearer access token when no
+    # session cookie authenticated the request (the Flutter client's path).
+    "apps.accounts.middleware.OIDCBearerAuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -45,7 +43,13 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # DIRS is searched before any app's own templates/ (APP_DIRS below),
+        # so a template here overrides oidc_provider's own — e.g.
+        # templates/oidc_provider/authorize.html replaces the package's
+        # default consent page. Needed since oidc_provider precedes
+        # apps.accounts in INSTALLED_APPS, so an app-level override alone
+        # wouldn't win.
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -85,45 +89,31 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Auth / OIDC (FR-01, FR-02, FR-03)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SITE_ID = 1
-
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
-SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
-
-# Also read directly (not just via SOCIALACCOUNT_PROVIDERS below) so
-# apps/accounts/views.py can verify a Google ID token from the mobile app's
-# native Sign-In SDK against the same web client — see
-# google_token_login_view.
-GOOGLE_OIDC_CLIENT_ID = env.GOOGLE_OIDC_CLIENT_ID
-
-SOCIALACCOUNT_PROVIDERS = {
-    "google": {
-        "APP": {
-            "client_id": GOOGLE_OIDC_CLIENT_ID,
-            "secret": env.GOOGLE_OIDC_CLIENT_SECRET,
-            "key": "",
-        },
-        "SCOPE": ["openid", "profile", "email"],
-        "AUTH_PARAMS": {"access_type": "online", "prompt": "select_account"},
-        "OAUTH_PKCE_ENABLED": True,
-    }
-}
-
-# Login/logout complete the OIDC redirect in a single GET (no intermediate confirm
-# page). LOGIN_REDIRECT_URL only matters for a real browser tab (Flutter web, FR-01)
-# — the mobile app doesn't use this redirect flow at all (see
-# google_token_login_view). For web, landing on the raw /api/auth/me/ JSON would
-# leave that JSON on screen instead of the app, so both login and logout send the
-# browser back to the frontend itself.
-SOCIALACCOUNT_LOGIN_ON_GET = True
-ACCOUNT_LOGOUT_ON_GET = True
-
+# This backend is itself the OpenID Connect Provider the Flutter client
+# authenticates against (Authorization Code + PKCE flow via /openid/),
+# instead of verifying a third-party Google ID token. LOGIN_URL is Django's
+# default ("/accounts/login/", wired up in config/urls.py via
+# django.contrib.auth.urls) — django-oidc-provider's /openid/authorize/
+# redirects there when the browser has no session yet, same as the old
+# allauth redirect flow did.
+#
+# For web, landing on the raw /api/auth/me/ JSON after login/logout would
+# leave that JSON on screen instead of the app, so both send the browser
+# back to the frontend itself. The mobile app doesn't use this redirect
+# flow's post-login page at all — it captures the `code` from the redirect
+# URI before the browser ever gets here.
 LOGIN_REDIRECT_URL = env.FRONTEND_URL
-ACCOUNT_LOGOUT_REDIRECT_URL = env.FRONTEND_URL
+LOGOUT_REDIRECT_URL = env.FRONTEND_URL
+
+# See apps/accounts/oidc.py — populates standard + app-specific (theme,
+# CEFR level) claims for id_token and /openid/userinfo/ alike.
+OIDC_USERINFO = "apps.accounts.oidc.userinfo"
+OIDC_EXTRA_SCOPE_CLAIMS = "apps.accounts.oidc.AppScopeClaims"
+OIDC_IDTOKEN_INCLUDE_CLAIMS = True
 
 # Session-only auth is sufficient for Day 1; session expires -> FR-03 redirect-to-login
 # is enforced client-side by checking /api/auth/me/.

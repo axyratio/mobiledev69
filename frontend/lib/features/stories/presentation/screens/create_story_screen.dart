@@ -255,6 +255,7 @@ class _PickCountStepState extends State<_PickCountStep> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               FilledButton.icon(
                 onPressed: viewModel.canConfirmPick && !viewModel.isBusy
@@ -339,6 +340,7 @@ class _ReviewWordsStep extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               FilledButton.icon(
                 onPressed: viewModel.isBusy ? null : viewModel.generate,

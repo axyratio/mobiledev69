@@ -8,19 +8,6 @@ abstract class AuthRepository {
   /// The current session's user, or null if there is no valid session.
   Future<Result<SessionUser?>> fetchCurrentUser();
 
-  Future<Result<SessionUser>> login({required String email, required String password});
-
-  Future<Result<SessionUser>> register({
-    required String firstName,
-    required String lastName,
-    required String email,
-    required String password,
-  });
-
-  /// Trades a Google ID token (from the mobile app's native Sign-In SDK)
-  /// for a real session cookie.
-  Future<Result<SessionUser>> loginWithGoogleIdToken(String idToken);
-
   Future<Result<void>> logout();
 
   /// Persists the learner's chosen theme (FR-17/FR-18 Dark Mode), so it's

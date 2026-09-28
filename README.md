@@ -1,6 +1,6 @@
 # AI Story Generator
 
-แอปสร้างเรื่องสั้นภาษาอังกฤษด้วย AI จากคลังคำศัพท์ Oxford 3000 ผู้ใช้ล็อกอินผ่าน Google OIDC เลือกจำนวนคำ/ระดับ CEFR ระบบสุ่มคำแล้วให้ AI (Gemini) แต่งเรื่อง พร้อม highlight คำศัพท์ที่ใช้จริง และจัดการเรื่องของตัวเองได้ (ดู/แก้ไข/ลบ)
+แอปสร้างเรื่องสั้นภาษาอังกฤษด้วย AI จากคลังคำศัพท์ Oxford 3000 ผู้ใช้ล็อกอินผ่าน OIDC (backend เป็น OpenID Connect Provider ของตัวเอง ผ่าน django-oidc-provider) หรือ email/password เลือกจำนวนคำ/ระดับ CEFR ระบบสุ่มคำแล้วให้ AI (Gemini) แต่งเรื่อง พร้อม highlight คำศัพท์ที่ใช้จริง และจัดการเรื่องของตัวเองได้ (ดู/แก้ไข/ลบ)
 
 โปรเจกต์แบ่งเป็น 2 ส่วน:
 
@@ -16,7 +16,6 @@
 | Python | >= 3.11 |
 | [uv](https://docs.astral.sh/uv/) (ตัวจัดการ dependency ของ backend) | ล่าสุด |
 | Flutter SDK | channel `stable`, Dart `^3.13.2` |
-| Google Cloud project ที่มี OAuth Client ID (ประเภท **Web**) | - |
 | Gemini API key (ฟรีที่ https://aistudio.google.com/apikey) | - |
 
 ---
@@ -46,9 +45,6 @@ DJANGO_DEBUG=true
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,10.0.2.2
 
 #DATABASE_URL=                                  # comment ทิ้งไว้ = ใช้ SQLite local (ดูหมายเหตุด้านล่าง)
-
-GOOGLE_OIDC_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
-GOOGLE_OIDC_CLIENT_SECRET=<web-client-secret>
 
 FRONTEND_URL=http://localhost:8080
 CORS_ALLOWED_ORIGINS=http://localhost:8080,http://10.0.2.2:8080
@@ -83,24 +79,21 @@ Backend จะรันที่ `http://localhost:8000`
 
 ---
 
-## 2. Google OAuth setup (ต้องทำก่อน login ได้)
+## 2. OIDC Client setup (ต้องทำก่อน login ได้)
 
-1. ไปที่ Google Cloud Console, เมนู Credentials (https://console.cloud.google.com/apis/credentials) สร้าง **OAuth 2.0 Client ID** ประเภท **Web application**
-2. เพิ่ม **Authorized redirect URI**:
-   `http://localhost:8000/accounts/google/login/callback/`
-3. เอา Client ID/Secret มาใส่ `GOOGLE_OIDC_CLIENT_ID` / `GOOGLE_OIDC_CLIENT_SECRET` ใน `backend/.env`
-4. ถ้าจะ login จากแอปมือถือ (native Google Sign-In) ต้องเพิ่ม **SHA-1 fingerprint** ของ Android debug/release keystore เข้าไปใน OAuth consent / Android client ที่ผูกกับ Client ID เดียวกันด้วย
+Backend เป็น OpenID Connect Provider ของตัวเอง (`django-oidc-provider`) ไม่ต้องพึ่ง Google Cloud Console อีกต่อไป — สร้าง Client ผ่าน Django admin ของ backend เอง:
 
-   ดูวิธีเอา SHA-1: `frontend/android/gradlew` และ `gradlew.bat` เป็นไฟล์ที่ถูก `.gitignore` ไว้
-   (ไม่มีมาให้ตั้งแต่ clone) ต้อง build/run แอป Android ครั้งหนึ่งก่อน เพื่อให้ Flutter สร้าง
-   Gradle wrapper ขึ้นมาให้ ถึงจะรัน `signingReport` ได้:
+1. `uv run python manage.py createsuperuser` (ถ้ายังไม่มี) แล้วเข้า `http://localhost:8000/admin/`
+2. หาเมนู **OpenID Connect Provider → Clients → Add client**
+3. ตั้งค่า:
+   - **Client Type**: `Public`
+   - **Response types**: `code`
+   - **Redirect URIs**: `com.example.frontend:/oauth2redirect` (ต้องตรงกับ `AppConfig.oidcRedirectUri` ใน `frontend/lib/core/config/app_config.dart` เป๊ะ — ถ้าเปลี่ยน `applicationId`/`PRODUCT_BUNDLE_IDENTIFIER` ของแอป ต้องแก้ทั้งสามที่ให้ตรงกัน: ที่นี่, `AppConfig.oidcRedirectUri`, และ `appAuthRedirectScheme`/`CFBundleURLSchemes`)
+   - **JWT Algorithm**: `RS256`
+4. Save แล้วก็อป **Client ID** ที่ auto-gen มาใส่ตอนรันแอป Flutter (ดูข้อ 3.2)
+5. รัน `uv run python manage.py creatersakey` **ครั้งเดียว** (สร้าง RSA key ไว้เซ็น id_token — ถ้ายังไม่เคยรันจะเจอ error ตอน login)
 
-   ```bash
-   cd frontend
-   flutter build apk --debug        # สร้าง gradlew/gradlew.bat ให้ครั้งแรก (ใช้เวลาสักพัก)
-   cd android
-   ./gradlew signingReport          # Windows cmd.exe ใช้ gradlew.bat signingReport
-   ```
+Public client + response_type=code จะเจอหน้า **consent** ("Request for Permission") ทุกครั้งที่ login ใหม่ (by design ของ library สำหรับ public client — ไม่ใช่ bug)
 
 ---
 
@@ -115,21 +108,15 @@ flutter pub get
 
 ### 3.2 รันแอป (ต้องชี้ไปที่ backend URL เสมอ)
 
-Android emulator ใช้ `adb reverse` ผูกพอร์ตเข้ากับ `localhost` ของเครื่อง host แทนการใช้ `10.0.2.2` (Google OAuth ไม่รองรับ private IP เป็น redirect/callback origin):
-
 ```bash
-adb reverse tcp:8000 tcp:8000
-```
-
-```bash
-# Android emulator (หลังรัน adb reverse แล้ว)
-flutter run --dart-define=BACKEND_BASE_URL=http://localhost:8000 --dart-define=GOOGLE_WEB_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
+# Android emulator (10.0.2.2 = localhost ของเครื่อง host จากมุมมอง emulator)
+flutter run --dart-define=BACKEND_BASE_URL=http://10.0.2.2:8000 --dart-define=OIDC_CLIENT_ID=<client-id-จากข้อ-2>
 
 # iOS simulator / Web / Desktop (backend อยู่เครื่องเดียวกัน)
-flutter run --dart-define=BACKEND_BASE_URL=http://localhost:8000 --dart-define=GOOGLE_WEB_CLIENT_ID=<web-client-id>.apps.googleusercontent.com
+flutter run --dart-define=BACKEND_BASE_URL=http://localhost:8000 --dart-define=OIDC_CLIENT_ID=<client-id-จากข้อ-2>
 ```
 
-`GOOGLE_WEB_CLIENT_ID` ต้องเป็น **Web client ID เดียวกัน** กับ `GOOGLE_OIDC_CLIENT_ID` ฝั่ง backend (native Google Sign-In ใช้มันเป็น `serverClientId` เพื่อให้ backend เชื่อ ID token ที่ส่งมา)
+`OIDC_CLIENT_ID` คือ `client_id` ของ Client ที่สร้างไว้ในข้อ 2 — ใช้ตัวเดียวกันทั้ง Android/iOS/Web ได้ (public client เดียวกัน) ปุ่ม "Continue via OIDC" บนมือถือจะเปิด system browser ไปที่ `/openid/authorize/` ของ backend แบบ Authorization Code + PKCE (`flutter_appauth`); ฝั่ง Web จะ redirect ตรงไปหน้า `/accounts/login/` ของ backend แทน (ตั้ง session cookie ในตัวเดียว ไม่ต้องผ่าน `/openid/`)
 
 ### 3.3 อนุญาต HTTP แบบไม่เข้ารหัสตอน dev (local backend เป็น http)
 
@@ -156,7 +143,7 @@ frontend/
   lib/
     core/         # config, api client, auth/session, theme
     features/
-      auth/       # login/signup, Google OIDC
+      auth/       # login/signup, OIDC (flutter_appauth on mobile, redirect on web)
       home/       # feed, my stories
       stories/    # create story, story detail
       settings/

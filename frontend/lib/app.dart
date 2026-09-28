@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'core/api/api_client.dart';
 import 'core/auth/session_store.dart';
+import 'core/auth/token_store.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/data/auth_repository_impl.dart';
@@ -23,10 +24,12 @@ class StoryGeneratorApp extends StatelessWidget {
     super.key,
     required this.apiClient,
     required this.sessionStore,
+    required this.tokenStore,
   });
 
   final ApiClient apiClient;
   final SessionStore sessionStore;
+  final TokenStore tokenStore;
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +37,9 @@ class StoryGeneratorApp extends StatelessWidget {
       providers: [
         Provider<ApiClient>.value(value: apiClient),
         Provider<SessionStore>.value(value: sessionStore),
+        Provider<TokenStore>.value(value: tokenStore),
         Provider<AuthRepository>(
-          create: (_) => AuthRepositoryImpl(apiClient, sessionStore),
+          create: (_) => AuthRepositoryImpl(apiClient, sessionStore, tokenStore),
         ),
         Provider<HomeRepository>(create: (_) => HomeRepositoryImpl(apiClient)),
         Provider<StoriesRepository>(

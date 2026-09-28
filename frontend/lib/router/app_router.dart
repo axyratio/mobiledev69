@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/auth/presentation/screens/signup_screen.dart';
 import '../features/auth/presentation/viewmodels/auth_view_model.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/my_stories_screen.dart';
@@ -33,10 +32,6 @@ GoRouter buildAppRouter(AuthViewModel authViewModel) {
         builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(
-        path: '/signup',
-        builder: (context, state) => const SignupScreen(),
-      ),
       GoRoute(
         path: '/create',
         builder: (context, state) => const CreateStoryScreen(),

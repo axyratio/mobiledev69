@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'core/api/api_client.dart';
 import 'core/auth/session_store.dart';
+import 'core/auth/token_store.dart';
 import 'core/web/url_strategy.dart';
 
 Future<void> main() async {
@@ -12,6 +13,16 @@ Future<void> main() async {
   // index.html — see the Render static site rewrite rule.
   configureUrlStrategy();
   final sessionStore = await SessionStore.create();
-  final apiClient = await ApiClient.create(cookieJar: sessionStore.cookieJar);
-  runApp(StoryGeneratorApp(apiClient: apiClient, sessionStore: sessionStore));
+  final tokenStore = TokenStore.create();
+  final apiClient = await ApiClient.create(
+    cookieJar: sessionStore.cookieJar,
+    tokenStore: tokenStore,
+  );
+  runApp(
+    StoryGeneratorApp(
+      apiClient: apiClient,
+      sessionStore: sessionStore,
+      tokenStore: tokenStore,
+    ),
+  );
 }
