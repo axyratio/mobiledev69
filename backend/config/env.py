@@ -36,7 +36,9 @@ class Env:
         "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,10.0.2.2"
     )
 
-    DATABASE_URL: str = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+    # `or` (not a .get default) so an empty `DATABASE_URL=` line in .env
+    # still falls back to sqlite instead of crashing dj_database_url.
+    DATABASE_URL: str = os.environ.get("DATABASE_URL") or f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
 
     FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "http://localhost:8080")
     CORS_ALLOWED_ORIGINS: list[str] = _read_list(
