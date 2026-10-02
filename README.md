@@ -105,7 +105,7 @@ flutter pub get
 
 ```bash
 # Web simulator
-flutter run --web-port8080 --dart-define=BACKEND_BASE_URL=http://localhost:8000 --dart-define=OIDC_CLIENT_ID=395502
+flutter run -d chrome --web-port 8080 --dart-define=BACKEND_BASE_URL=http://localhost:8000 --dart-define=OIDC_CLIENT_ID=395502
 
 # Android emulator (10.0.2.2 = localhost ของเครื่อง host จากมุมมอง emulator)
 flutter run --dart-define=BACKEND_BASE_URL=http://10.0.2.2:8000 --dart-define=OIDC_CLIENT_ID=<client-id-จากข้อ-2>
