@@ -3,6 +3,7 @@ from django.urls import include, path
 
 from apps.accounts.views import (
     current_user_view,
+    logout_view,
     oidc_signup_view,
     update_cefr_level_filter_view,
     update_cefr_level_view,
@@ -17,6 +18,7 @@ urlpatterns = [
     # that has no session yet (see LOGIN_URL), same role the old allauth
     # redirect flow played. oidc_signup_view fills the one gap it doesn't
     # cover: creating a brand new account from that same browser page.
+    path("accounts/logout/", logout_view, name="logout"),
     path("accounts/", include("django.contrib.auth.urls")),
     path("accounts/signup/", oidc_signup_view, name="oidc-signup"),
     # This backend's own OpenID Connect Provider endpoints (FR-01/FR-02),

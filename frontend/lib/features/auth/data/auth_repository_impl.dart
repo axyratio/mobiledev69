@@ -76,7 +76,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<void>> logout() async {
     try {
-      await _apiClient.dio.get<void>(
+      await _apiClient.dio.post<void>(
         AppConfig.logoutUrl,
         options: Options(followRedirects: false, validateStatus: (status) => true),
       );

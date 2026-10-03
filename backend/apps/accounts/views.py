@@ -3,6 +3,7 @@ import json
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
@@ -81,6 +82,17 @@ def oidc_signup_view(request):
         "registration/signup.html",
         {"error": error, "next": next_url, "form_values": form_values},
     )
+
+
+@csrf_exempt
+@require_POST
+def logout_view(request):
+    """Ends the session. Django 5+'s own LogoutView is POST-only and
+    CSRF-protected, which the Flutter client (no CSRF token) can't satisfy,
+    so this mirrors the other API endpoints here: POST-only, csrf_exempt.
+    """
+    auth_logout(request)
+    return redirect(settings.LOGOUT_REDIRECT_URL)
 
 
 @csrf_exempt
